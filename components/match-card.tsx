@@ -266,7 +266,7 @@ function ScoreBox({ match }: { match: Match }) {
         </p>
       ) : (
         <p className="text-xs font-semibold text-muted">
-          {match.status === "live" ? "Đang đá" : "Đã đá"}
+          {match.status === "live" ? "Đang đá" : "Đang cập nhật"}
         </p>
       )}
     </div>
