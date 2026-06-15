@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/server/db";
 import { hashPassword, createSession, newId } from "@/lib/server/auth";
+import { MIN_STAKE, DEFAULT_STAKE } from "@/lib/data/markets";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,13 @@ interface Body {
   name?: string;
   avatar?: string;
   favoriteTeam?: string;
-  predictions?: { matchId: string; market: string; value: string }[];
+  predictions?: { matchId: string; market: string; value: string; stake?: number }[];
+}
+
+function cleanStake(v: unknown): number {
+  const n = Math.floor(Number(v));
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_STAKE;
+  return Math.max(MIN_STAKE, Math.min(n, 1_000_000_000));
 }
 
 export async function POST(req: Request) {
@@ -58,9 +65,9 @@ export async function POST(req: Request) {
     for (const p of local) {
       if (!p?.matchId || !p?.market || !p?.value) continue;
       await db.execute({
-        sql: `insert into predictions(user_id,match_id,market,value,created_at) values(?,?,?,?,?)
-              on conflict(user_id,match_id,market) do update set value=excluded.value`,
-        args: [id, p.matchId, p.market, p.value, Date.now()],
+        sql: `insert into predictions(user_id,match_id,market,value,stake,created_at) values(?,?,?,?,?,?)
+              on conflict(user_id,match_id,market) do update set value=excluded.value, stake=excluded.stake`,
+        args: [id, p.matchId, p.market, p.value, cleanStake(p.stake), Date.now()],
       });
     }
 

@@ -145,16 +145,21 @@ function setPredsCache(list: Prediction[]) {
   if (!serverMode) localStorage.setItem(K_PREDS, JSON.stringify(list));
 }
 
-export function placePrediction(matchId: string, market: MarketId, value: string) {
+export function placePrediction(
+  matchId: string,
+  market: MarketId,
+  value: string,
+  stake: number,
+) {
   const list = getPredictions().filter(
     (p) => !(p.matchId === matchId && p.market === market),
   );
-  setPredsCache([...list, { matchId, market, value, createdAt: Date.now() }]);
+  setPredsCache([...list, { matchId, market, value, stake, createdAt: Date.now() }]);
   if (serverMode) {
     fetch("/api/predictions", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ matchId, market, value }),
+      body: JSON.stringify({ matchId, market, value, stake }),
     }).catch(() => {});
   }
 }

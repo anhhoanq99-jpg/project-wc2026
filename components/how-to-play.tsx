@@ -1,7 +1,10 @@
 import { ShieldCheck, Fish, TrendingUp, RotateCcw } from "lucide-react";
 import { MARKETS, STARTING_BALANCE } from "@/lib/data/markets";
-import { fmtWC, fmtDeltaShort } from "@/lib/format";
+import { payout } from "@/lib/scoring";
+import { fmtWC, fmtNum } from "@/lib/format";
 import { Reveal } from "@/components/reveal";
+
+const EXAMPLE_STAKE = 1_000_000;
 
 export function HowToPlay() {
   const steps = [
@@ -12,8 +15,8 @@ export function HowToPlay() {
     },
     {
       icon: <TrendingUp className="h-5 w-5" />,
-      title: "Đúng → cộng, Sai → trừ",
-      desc: "Dự đoán càng khó thưởng càng cao. Đoán bừa sẽ mất điểm — chọn chắc chắn để leo hạng.",
+      title: "Tự chọn mức đặt",
+      desc: "Bạn quyết định đặt bao nhiêu cho mỗi dự đoán. Đúng được mức đặt × tỉ lệ, sai mất mức đặt. Loại càng khó tỉ lệ càng cao.",
     },
     {
       icon: <RotateCcw className="h-5 w-5" />,
@@ -51,26 +54,24 @@ export function HowToPlay() {
       <Reveal delay={0.1}>
         <div className="mt-6 rounded-xl border border-border bg-surface/40 p-5">
           <p className="mb-3 text-sm font-bold uppercase tracking-wide text-muted">
-            Mức thưởng / phạt mỗi dự đoán
+            Tỉ lệ thắng từng loại dự đoán
           </p>
           <div className="overflow-hidden rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-2/60 text-xs uppercase text-muted">
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold">Loại dự đoán</th>
-                  <th className="px-3 py-2 text-right font-semibold">Đúng</th>
-                  <th className="px-3 py-2 text-right font-semibold">Sai</th>
+                  <th className="px-3 py-2 text-right font-semibold">Tỉ lệ</th>
+                  <th className="px-3 py-2 text-right font-semibold">Đặt 1 triệu → thắng</th>
                 </tr>
               </thead>
               <tbody>
                 {MARKETS.map((mk) => (
                   <tr key={mk.id} className="border-t border-border/60">
                     <td className="px-3 py-2">{mk.name}</td>
+                    <td className="px-3 py-2 text-right font-bold text-foreground">×{mk.odds}</td>
                     <td className="px-3 py-2 text-right font-bold text-brand">
-                      {fmtDeltaShort(mk.points)}
-                    </td>
-                    <td className="px-3 py-2 text-right font-bold text-danger">
-                      {fmtDeltaShort(-mk.penalty)}
+                      +{fmtNum(payout(EXAMPLE_STAKE, mk.odds))}
                     </td>
                   </tr>
                 ))}

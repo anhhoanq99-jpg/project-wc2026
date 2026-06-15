@@ -1,11 +1,22 @@
 import type { Match } from "@/lib/types";
-import { MARKET_MAP, STARTING_BALANCE, type MarketId } from "@/lib/data/markets";
+import {
+  MARKET_MAP,
+  STARTING_BALANCE,
+  DEFAULT_STAKE,
+  type MarketId,
+} from "@/lib/data/markets";
 
 export interface Prediction {
   matchId: string;
   market: MarketId;
   value: string; // lựa chọn đã chọn
+  stake: number; // mức đặt (số điểm) — thắng được stake × odds, thua mất stake
   createdAt: number;
+}
+
+/** Tiền thắng dự kiến (làm tròn) khi đặt `stake` ở tỉ lệ `odds`. */
+export function payout(stake: number, odds: number): number {
+  return Math.round(stake * odds);
 }
 
 export interface SettledPrediction {
@@ -25,7 +36,9 @@ export function scorePrediction(pred: Prediction, match: Match): SettledPredicti
   if (answer === null) return { settled: false, correct: false, delta: 0 };
 
   const correct = answer === pred.value;
-  return { settled: true, correct, delta: correct ? market.points : -market.penalty };
+  // Mức đặt: dùng stake của dự đoán; dự đoán cũ (chưa có stake) dùng mức mặc định.
+  const stake = pred.stake && pred.stake > 0 ? pred.stake : DEFAULT_STAKE;
+  return { settled: true, correct, delta: correct ? payout(stake, market.odds) : -stake };
 }
 
 export interface Standing {

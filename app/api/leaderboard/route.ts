@@ -16,7 +16,7 @@ export async function GET() {
 
   const usersRes = await db.execute("select id, name, avatar from users");
   const predsRes = await db.execute(
-    "select user_id, match_id, market, value, created_at from predictions",
+    "select user_id, match_id, market, value, stake, created_at from predictions",
   );
 
   const byUser = new Map<string, Prediction[]>();
@@ -27,6 +27,7 @@ export async function GET() {
       matchId: r.match_id as string,
       market: r.market as MarketId,
       value: r.value as string,
+      stake: Number(r.stake) || 0,
       createdAt: Number(r.created_at),
     });
     byUser.set(uid, arr);

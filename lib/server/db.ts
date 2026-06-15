@@ -59,12 +59,20 @@ async function initSchema(c: Client) {
         match_id text not null,
         market text not null,
         value text not null,
+        stake integer not null default 0,
         created_at integer not null,
         primary key (user_id, match_id, market)
       )`,
     ],
     "write",
   );
+
+  // Migration: DB cũ (đã tạo trước khi có mức đặt) chưa có cột stake -> thêm vào.
+  try {
+    await c.execute("alter table predictions add column stake integer not null default 0");
+  } catch {
+    // cột đã tồn tại -> bỏ qua
+  }
 }
 
 export async function getDb(): Promise<Client> {
