@@ -55,8 +55,8 @@ export const MARKETS: Market[] = [
     id: "1x2",
     name: "Thắng – Hòa – Thua",
     short: "1X2",
-    odds: 1.25,
-    desc: "Đoán đội thắng hoặc hòa.",
+    odds: 2.5,
+    desc: "Đoán đội nhà thắng, hòa, hay đội khách thắng (3 lựa chọn).",
     options: (m) => [
       { value: "H", label: `${getTeam(m.homeCode).name} thắng` },
       { value: "D", label: "Hòa" },
