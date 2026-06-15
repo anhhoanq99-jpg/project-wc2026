@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ListChecks, BarChart3 } from "lucide-react";
 import { Hero } from "@/components/hero";
 import { ProfileBar } from "@/components/profile-bar";
+import { PlayerRating } from "@/components/player-rating";
 import { MyTeam } from "@/components/my-team";
 import { TodayBoard } from "@/components/today-board";
 import { ScheduleList } from "@/components/schedule-list";
@@ -15,6 +16,9 @@ export default function HomePage() {
 
       <div className="mx-auto max-w-6xl space-y-12 px-4 py-10 sm:px-6">
         <ProfileBar />
+
+        {/* Đánh giá người chơi (hiện khi đã có dự đoán) */}
+        <PlayerRating />
 
         {/* GHIM ĐẦU TRANG: trận hôm nay + ngày mai */}
         <TodayBoard />
