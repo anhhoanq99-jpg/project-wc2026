@@ -13,23 +13,26 @@ let clientPromise: Promise<Client> | null = null;
 let ready: Promise<void> | null = null;
 
 async function makeClient(): Promise<Client> {
-  const url = process.env.DATABASE_URL ?? "file:./data/wc.db";
-  const authToken = process.env.DATABASE_AUTH_TOKEN;
+  // .trim(): chống ký tự thừa/khoảng trắng/xuống dòng lỡ dán vào env trên dashboard.
+  const rawUrl = (process.env.DATABASE_URL ?? "file:./data/wc.db").trim();
+  const authToken = process.env.DATABASE_AUTH_TOKEN?.trim();
 
-  if (url.startsWith("file:")) {
+  if (rawUrl.startsWith("file:")) {
     // Local: client Node hỗ trợ file + tạo thư mục nếu chưa có.
     const [{ createClient }, { existsSync, mkdirSync }, { dirname }] = await Promise.all([
       import("@libsql/client"),
       import("node:fs"),
       import("node:path"),
     ]);
-    const path = url.slice("file:".length);
+    const path = rawUrl.slice("file:".length);
     const dir = dirname(path);
     if (dir && dir !== "." && !existsSync(dir)) mkdirSync(dir, { recursive: true });
-    return createClient({ url, authToken });
+    return createClient({ url: rawUrl, authToken });
   }
 
   // Production: client web cho DB từ xa (Turso).
+  // Đổi libsql:// -> https:// vì fetch của runtime không hiểu scheme libsql://.
+  const url = rawUrl.replace(/^libsql:\/\//, "https://");
   const { createClient } = await import("@libsql/client/web");
   return createClient({ url, authToken }) as unknown as Client;
 }
