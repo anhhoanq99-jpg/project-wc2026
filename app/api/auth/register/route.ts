@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/server/db";
 import { hashPassword, createSession, newId } from "@/lib/server/auth";
-import { MIN_STAKE, DEFAULT_STAKE } from "@/lib/data/markets";
+import { MIN_STAKE, MAX_STAKE, DEFAULT_STAKE } from "@/lib/data/markets";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ interface Body {
 function cleanStake(v: unknown): number {
   const n = Math.floor(Number(v));
   if (!Number.isFinite(n) || n <= 0) return DEFAULT_STAKE;
-  return Math.max(MIN_STAKE, Math.min(n, 1_000_000_000));
+  return Math.max(MIN_STAKE, Math.min(n, MAX_STAKE));
 }
 
 export async function POST(req: Request) {

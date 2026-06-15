@@ -11,7 +11,7 @@ const NAV = [
   { href: "/#hom-nay", label: "Hôm nay" },
   { href: "/#lich-dau", label: "Lịch đấu" },
   { href: "/so-do", label: "Sơ đồ" },
-  { href: "/lich-su", label: "Lịch sử" },
+  { href: "/lich-su", label: "Lịch sử dự đoán" },
   { href: "/bang-xep-hang", label: "Bảng xếp hạng" },
 ];
 

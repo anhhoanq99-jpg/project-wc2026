@@ -10,6 +10,7 @@ import {
   STAKE_PRESETS,
   DEFAULT_STAKE,
   MIN_STAKE,
+  MAX_STAKE,
 } from "@/lib/data/markets";
 import { payout, type Prediction } from "@/lib/scoring";
 import { getTeam } from "@/lib/data/teams";
@@ -38,7 +39,10 @@ export function PredictionSheet({ match, onClose }: { match: Match; onClose: () 
 
   // Mức đặt đang chọn (áp cho dự đoán đặt tiếp theo).
   const [stake, setStake] = useState<number>(DEFAULT_STAKE);
-  const betStake = Number.isFinite(stake) && stake >= MIN_STAKE ? Math.floor(stake) : MIN_STAKE;
+  const betStake = Math.min(
+    MAX_STAKE,
+    Number.isFinite(stake) && stake >= MIN_STAKE ? Math.floor(stake) : MIN_STAKE,
+  );
 
   const predOf = (market: MarketId): Prediction | undefined =>
     preds.find((p) => p.matchId === match.id && p.market === market);
@@ -103,12 +107,15 @@ export function PredictionSheet({ match, onClose }: { match: Match; onClose: () 
             id="custom-stake"
             type="number"
             min={MIN_STAKE}
+            max={MAX_STAKE}
             step={100_000}
             value={stake}
             onChange={(e) => setStake(parseInt(e.target.value, 10) || 0)}
             className="h-9 w-36 rounded-lg border border-input bg-background px-3 text-sm font-semibold focus:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           />
-          <span className="text-xs text-muted">WC · tối thiểu {stakeChip(MIN_STAKE)}</span>
+          <span className="text-xs text-muted">
+            WC · {stakeChip(MIN_STAKE)}–{stakeChip(MAX_STAKE)}
+          </span>
         </div>
       </div>
 
