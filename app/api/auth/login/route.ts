@@ -18,23 +18,30 @@ export async function POST(req: Request) {
   if (!email || !password)
     return NextResponse.json({ error: "Thiếu email hoặc mật khẩu" }, { status: 400 });
 
-  const db = await getDb();
-  const r = await db.execute({
-    sql: "select id, email, password, name, avatar, favorite_team from users where email=?",
-    args: [email],
-  });
-  const u = r.rows[0];
-  if (!u || !verifyPassword(password, u.password as string))
-    return NextResponse.json({ error: "Email hoặc mật khẩu sai" }, { status: 401 });
+  try {
+    const db = await getDb();
+    const r = await db.execute({
+      sql: "select id, email, password, name, avatar, favorite_team from users where email=?",
+      args: [email],
+    });
+    const u = r.rows[0];
+    if (!u || !verifyPassword(password, u.password as string))
+      return NextResponse.json({ error: "Email hoặc mật khẩu sai" }, { status: 401 });
 
-  await createSession(u.id as string);
-  return NextResponse.json({
-    user: {
-      id: u.id,
-      email: u.email,
-      name: u.name,
-      avatar: u.avatar,
-      favoriteTeam: u.favorite_team,
-    },
-  });
+    await createSession(u.id as string);
+    return NextResponse.json({
+      user: {
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        avatar: u.avatar,
+        favoriteTeam: u.favorite_team,
+      },
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "Lỗi máy chủ/CSDL", detail: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
 }

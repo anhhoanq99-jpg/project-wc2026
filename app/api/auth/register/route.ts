@@ -33,38 +33,45 @@ export async function POST(req: Request) {
   if (name.length < 2)
     return NextResponse.json({ error: "Tên tối thiểu 2 ký tự" }, { status: 400 });
 
-  const db = await getDb();
-  const exists = await db.execute({ sql: "select id from users where email=?", args: [email] });
-  if (exists.rows[0])
-    return NextResponse.json({ error: "Email đã được đăng ký" }, { status: 409 });
+  try {
+    const db = await getDb();
+    const exists = await db.execute({ sql: "select id from users where email=?", args: [email] });
+    if (exists.rows[0])
+      return NextResponse.json({ error: "Email đã được đăng ký" }, { status: 409 });
 
-  const id = newId();
-  await db.execute({
-    sql: "insert into users(id,email,password,name,avatar,favorite_team,created_at) values(?,?,?,?,?,?,?)",
-    args: [
-      id,
-      email,
-      hashPassword(password),
-      name,
-      (body.avatar ?? "").slice(0, 8),
-      (body.favoriteTeam ?? "").slice(0, 8),
-      Date.now(),
-    ],
-  });
-
-  // Mang theo dự đoán đã chơi ẩn danh (nếu có) vào tài khoản.
-  const local = Array.isArray(body.predictions) ? body.predictions.slice(0, 500) : [];
-  for (const p of local) {
-    if (!p?.matchId || !p?.market || !p?.value) continue;
+    const id = newId();
     await db.execute({
-      sql: `insert into predictions(user_id,match_id,market,value,created_at) values(?,?,?,?,?)
-            on conflict(user_id,match_id,market) do update set value=excluded.value`,
-      args: [id, p.matchId, p.market, p.value, Date.now()],
+      sql: "insert into users(id,email,password,name,avatar,favorite_team,created_at) values(?,?,?,?,?,?,?)",
+      args: [
+        id,
+        email,
+        hashPassword(password),
+        name,
+        (body.avatar ?? "").slice(0, 8),
+        (body.favoriteTeam ?? "").slice(0, 8),
+        Date.now(),
+      ],
     });
-  }
 
-  await createSession(id);
-  return NextResponse.json({
-    user: { id, email, name, avatar: body.avatar ?? "", favoriteTeam: body.favoriteTeam ?? "" },
-  });
+    // Mang theo dự đoán đã chơi ẩn danh (nếu có) vào tài khoản.
+    const local = Array.isArray(body.predictions) ? body.predictions.slice(0, 500) : [];
+    for (const p of local) {
+      if (!p?.matchId || !p?.market || !p?.value) continue;
+      await db.execute({
+        sql: `insert into predictions(user_id,match_id,market,value,created_at) values(?,?,?,?,?)
+              on conflict(user_id,match_id,market) do update set value=excluded.value`,
+        args: [id, p.matchId, p.market, p.value, Date.now()],
+      });
+    }
+
+    await createSession(id);
+    return NextResponse.json({
+      user: { id, email, name, avatar: body.avatar ?? "", favoriteTeam: body.favoriteTeam ?? "" },
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "Lỗi máy chủ/CSDL", detail: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
 }
