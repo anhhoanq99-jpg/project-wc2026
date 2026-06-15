@@ -1,5 +1,5 @@
 import type { Match } from "@/lib/types";
-import { MARKET_MAP, type MarketId } from "@/lib/data/bets";
+import { MARKET_MAP, type MarketId } from "@/lib/data/markets";
 import { scorePrediction, totalPoints, type Prediction, type Standing } from "@/lib/scoring";
 
 export interface HistoryItem {
@@ -13,7 +13,7 @@ export interface HistoryItem {
 export interface MarketStat {
   market: MarketId;
   name: string;
-  total: number; // số kèo đã chốt
+  total: number; // số dự đoán đã chốt
   correct: number;
   winRate: number; // 0..1
   net: number;
@@ -34,9 +34,9 @@ export interface Analytics {
   byMarket: MarketStat[];
   best: HistoryItem[]; // dự đoán giỏi nhất (đúng, giá trị cao)
   bestStreak: number; // chuỗi đúng dài nhất
-  favoriteMarket: MarketStat | null; // kèo mát tay nhất
-  worstMarket: MarketStat | null; // kèo lỗ nhất
-  topTeamCode: string | null; // đội cược nhiều nhất
+  favoriteMarket: MarketStat | null; // loại dự đoán mát tay nhất
+  worstMarket: MarketStat | null; // loại dự đoán tệ nhất
+  topTeamCode: string | null; // đội dự đoán nhiều nhất
   insights: string[];
   rating: PlayerRating;
 }
@@ -46,13 +46,13 @@ function rate(settled: number, winRate: number, net: number): PlayerRating {
     return {
       title: "🆕 Tân binh",
       stars: 0,
-      desc: "Cược thêm vài kèo (đã có kết quả) để hệ thống đánh giá trình độ của bạn!",
+      desc: "Dự đoán thêm vài trận (đã có kết quả) để hệ thống đánh giá trình độ của bạn!",
     };
   }
   let stars: number, title: string;
   if (winRate >= 0.6) {
     stars = 5;
-    title = "🏆 Cao thủ soi kèo";
+    title = "🏆 Cao thủ dự đoán";
   } else if (winRate >= 0.5) {
     stars = 4;
     title = "🎯 Nhà phân tích";
@@ -64,12 +64,12 @@ function rate(settled: number, winRate: number, net: number): PlayerRating {
     title = "🌱 Tay mơ học việc";
   } else {
     stars = 1;
-    title = "🎲 Hệ may rủi";
+    title = "🍀 Hên xui";
   }
   const desc =
     net >= 0
-      ? "Bạn đang có lời — nhãn quan tốt, tiếp tục phát huy!"
-      : "Bạn đang lỗ — soi kèo kỹ hơn và ưu tiên kèo chắc ăn nhé.";
+      ? "Bạn đang dương điểm — nhãn quan tốt, tiếp tục phát huy!"
+      : "Bạn đang âm điểm — cân nhắc kỹ hơn và ưu tiên dự đoán chắc chắn nhé.";
   return { title, stars, desc };
 }
 
@@ -98,7 +98,7 @@ export function computeAnalytics(
     else totalLost += -h.delta;
   }
 
-  // Theo từng loại kèo.
+  // Theo từng loại dự đoán.
   const marketMap = new Map<MarketId, { total: number; correct: number; net: number }>();
   for (const h of history) {
     if (!h.settled) continue;
@@ -139,7 +139,7 @@ export function computeAnalytics(
     } else cur = 0;
   }
 
-  // Đội cược nhiều nhất.
+  // Đội dự đoán nhiều nhất.
   const teamCount = new Map<string, number>();
   for (const p of preds) {
     const m = matchById.get(p.matchId);
@@ -156,24 +156,24 @@ export function computeAnalytics(
   const insights: string[] = [];
   if (favoriteMarket) {
     insights.push(
-      `Bạn mát tay nhất với kèo “${favoriteMarket.name}” — thắng ${favoriteMarket.correct}/${favoriteMarket.total}.`,
+      `Bạn mát tay nhất với “${favoriteMarket.name}” — đúng ${favoriteMarket.correct}/${favoriteMarket.total}.`,
     );
   }
   if (worstMarket && worstMarket.net < 0 && worstMarket !== favoriteMarket) {
-    insights.push(`Kèo “${worstMarket.name}” đang khiến bạn lỗ nhiều nhất — cân nhắc bớt lại.`);
+    insights.push(`“${worstMarket.name}” đang khiến bạn mất điểm nhiều nhất — cân nhắc bớt lại.`);
   }
   if (bestStreak >= 2) {
-    insights.push(`Chuỗi đoán đúng dài nhất của bạn: ${bestStreak} kèo liên tiếp 🔥.`);
+    insights.push(`Chuỗi đoán đúng dài nhất của bạn: ${bestStreak} lần liên tiếp 🔥.`);
   }
   const exactCount = preds.filter((p) => p.market === "exact").length;
   if (exactCount >= 3) {
-    insights.push(`Bạn khá liều — đã đặt ${exactCount} kèo Tỉ số chính xác (khó nhưng thưởng to).`);
+    insights.push(`Bạn khá mạnh dạn — đã dự đoán ${exactCount} lần Tỉ số chính xác (khó nhưng thưởng to).`);
   }
   if (standing.refills > 0) {
-    insights.push(`Bạn đã cháy ví và được hồi ${standing.refills} lần — chơi thận trọng hơn nhé!`);
+    insights.push(`Bạn đã hết điểm và được hồi ${standing.refills} lần — chơi thận trọng hơn nhé!`);
   }
   if (insights.length === 0) {
-    insights.push("Chưa đủ dữ liệu để phân tích sâu — cược thêm vài kèo nhé!");
+    insights.push("Chưa đủ dữ liệu để phân tích sâu — dự đoán thêm vài trận nhé!");
   }
 
   return {

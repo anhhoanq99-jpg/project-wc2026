@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserRound, Pencil, Trophy, Target, Heart, Clock, Wallet } from "lucide-react";
+import { UserRound, Pencil, Trophy, Target, Heart, Clock, Fish } from "lucide-react";
 import { setName, setFavoriteTeam } from "@/lib/storage";
 import { useProfile, usePredictions } from "@/components/use-store";
 import { useMatches } from "@/components/use-matches";
@@ -50,7 +50,7 @@ export function ProfileBar() {
             />
             <button
               onClick={save}
-              className="h-9 rounded-lg bg-brand px-3 text-sm font-semibold text-[#04130b]"
+              className="h-9 rounded-lg bg-brand px-3 text-sm font-semibold text-brand-foreground"
             >
               Lưu
             </button>
@@ -87,8 +87,8 @@ export function ProfileBar() {
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <Stat
-          icon={<Wallet className="h-4 w-4 text-brand" />}
-          label="Số dư ví"
+          icon={<Fish className="h-4 w-4 text-brand" />}
+          label="Điểm thưởng"
           value={fmtWC(stats.balance)}
         />
         <Stat

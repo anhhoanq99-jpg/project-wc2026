@@ -1,5 +1,5 @@
 import type { Match } from "@/lib/types";
-import { MARKET_MAP, STARTING_BALANCE, type MarketId } from "@/lib/data/bets";
+import { MARKET_MAP, STARTING_BALANCE, type MarketId } from "@/lib/data/markets";
 
 export interface Prediction {
   matchId: string;
@@ -25,17 +25,17 @@ export function scorePrediction(pred: Prediction, match: Match): SettledPredicti
   if (answer === null) return { settled: false, correct: false, delta: 0 };
 
   const correct = answer === pred.value;
-  return { settled: true, correct, delta: correct ? market.points : -market.stake };
+  return { settled: true, correct, delta: correct ? market.points : -market.penalty };
 }
 
 export interface Standing {
-  /** Số dư ví để cược (luôn > 0 — hết sẽ được hồi về mức khởi đầu). */
+  /** Số điểm thưởng để dự đoán (luôn > 0 — hết sẽ được hồi về mức khởi đầu). */
   balance: number;
   /** Tổng điểm để xếp hạng = khởi đầu + tổng cộng/trừ (CÓ THỂ ÂM). */
   total: number;
   /** Tổng cộng/trừ đã chốt. */
   net: number;
-  /** Số lần đã được hồi điểm (bailout) khi cháy ví. */
+  /** Số lần đã được hồi điểm (bailout) khi hết điểm. */
   refills: number;
   settled: number;
   correct: number;
@@ -69,7 +69,7 @@ export function totalPoints(
 
   const total = STARTING_BALANCE + net; // điểm xếp hạng (có thể âm)
 
-  // Ví cược: hết (≤ 0) thì hồi về mức khởi đầu, mỗi lần hồi tính 1 lần bailout.
+  // Kho điểm: hết (≤ 0) thì hồi về mức khởi đầu, mỗi lần hồi tính 1 lần bailout.
   let refills = 0;
   let balance = total;
   if (balance <= 0) {

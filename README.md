@@ -1,8 +1,8 @@
 # World Cup 2026 — Trang fan dự đoán vui
 
-Trang theo dõi World Cup 2026 **văn minh, không cờ bạc**: lịch thi đấu tự cập nhật, trận hôm nay/ngày mai ghim đầu trang, dự đoán cá cược bằng **điểm ảo (WC)**, bảng xếp hạng, sơ đồ knock-out, lịch sử & thống kê, đội tuyển yêu thích, và link xem trực tiếp trên VTVGo (nhà đài có bản quyền).
+Trang theo dõi World Cup 2026 **văn minh, hoàn toàn miễn phí**: lịch thi đấu tự cập nhật, trận hôm nay/ngày mai ghim đầu trang, dự đoán tỉ số bằng **điểm thưởng (WC)** 🐟, bảng xếp hạng, sơ đồ knock-out, lịch sử & thống kê, đội tuyển yêu thích, và link xem trực tiếp trên VTVGo (nhà đài có bản quyền).
 
-> Trang fan phi thương mại, độc lập — không liên kết với FIFA, không dùng logo/biểu tượng chính thức. Dự đoán chơi bằng điểm ảo, **không tiền thật, không cá độ**.
+> Trang fan phi thương mại, độc lập — không liên kết với FIFA, không dùng logo/biểu tượng chính thức. Đây là **trò chơi dự đoán cho vui bằng điểm thưởng — không tiền thật, không thanh toán**.
 
 ## Công nghệ
 

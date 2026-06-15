@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Crown, UserRound, LogIn, RefreshCw } from "lucide-react";
 import { useAuth } from "@/components/auth-context";
+import { Skeleton } from "@/components/ui/skeleton";
 import { fmtWC } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -77,7 +78,7 @@ export function Leaderboard() {
       {loading ? (
         <div className="space-y-2">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-xl bg-surface-2/60" />
+            <Skeleton key={i} className="h-14 rounded-xl" />
           ))}
         </div>
       ) : rows.length === 0 ? (

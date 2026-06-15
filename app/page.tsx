@@ -50,7 +50,7 @@ export default function HomePage() {
             </p>
             <Link
               href="/bang-xep-hang"
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 font-semibold text-[#04130b] hover:brightness-110"
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 font-semibold text-brand-foreground transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <BarChart3 className="h-5 w-5" />
               Xem bảng xếp hạng

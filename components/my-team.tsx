@@ -30,7 +30,7 @@ export function MyTeam() {
           </p>
           <button
             onClick={() => setPicker(true)}
-            className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 font-semibold text-[#04130b] hover:brightness-110"
+            className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 font-semibold text-brand-foreground hover:brightness-110"
           >
             <Star className="h-4 w-4" />
             Chọn đội của tôi

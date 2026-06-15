@@ -31,9 +31,9 @@ export function Hero() {
 
         <Reveal delay={0.1}>
           <p className="mx-auto mt-5 max-w-xl text-lg text-muted">
-            Lịch thi đấu đầy đủ, trận hôm nay nhắc ngay đầu trang, và đủ các kiểu kèo
-            dự đoán hấp dẫn — chơi bằng <strong className="text-foreground">điểm ảo</strong>,
-            tuyệt đối <strong className="text-foreground">không tiền, không cá độ</strong>.
+            Lịch thi đấu đầy đủ, trận hôm nay nhắc ngay đầu trang, và đủ kiểu
+            dự đoán hấp dẫn — chơi bằng <strong className="text-foreground">điểm thưởng</strong>,
+            <strong className="text-foreground"> hoàn toàn miễn phí, chỉ để vui</strong>.
           </p>
         </Reveal>
 
@@ -41,7 +41,7 @@ export function Hero() {
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="#hom-nay"
-              className="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 font-semibold text-[#04130b] shadow-lg shadow-brand/20 transition-transform duration-200 hover:scale-[1.03] hover:brightness-110 active:scale-95"
+              className="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 font-semibold text-brand-foreground shadow-lg shadow-brand/20 transition-transform duration-200 hover:scale-[1.03] hover:brightness-110 active:scale-95"
             >
               <CalendarDays className="h-5 w-5" />
               Xem trận hôm nay
@@ -59,7 +59,7 @@ export function Hero() {
         <Reveal delay={0.2}>
           <p className="mt-8 inline-flex items-center gap-2 text-sm text-muted">
             <ShieldCheck className="h-4 w-4 text-brand" />
-            Nói không với cờ bạc — hấp dẫn như cá độ nhưng 0 đồng.
+            Chơi dự đoán miễn phí, vui là chính — không tiền thật, không áp lực. 🐟
           </p>
         </Reveal>
       </div>

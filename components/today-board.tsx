@@ -5,6 +5,7 @@ import type { Match } from "@/lib/types";
 import { useMatches } from "@/components/use-matches";
 import { vnDayKey, vnTodayKey, vnDateLabel, vnRelativeDay } from "@/lib/tz";
 import { MatchCard } from "@/components/match-card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ORDER: Record<Match["status"], number> = { live: 0, upcoming: 1, finished: 2 };
 
@@ -123,10 +124,10 @@ function DayBlock({
 function BoardSkeleton() {
   return (
     <section className="rounded-2xl border border-brand/30 bg-brand/5 p-6">
-      <div className="mb-4 h-6 w-40 animate-pulse rounded bg-surface-2" />
+      <Skeleton className="mb-4 h-6 w-40" />
       <div className="grid gap-3 sm:grid-cols-2">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-36 animate-pulse rounded-xl bg-surface-2/60" />
+          <Skeleton key={i} className="h-36 rounded-xl" />
         ))}
       </div>
     </section>

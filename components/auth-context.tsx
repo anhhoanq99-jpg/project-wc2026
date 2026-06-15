@@ -15,6 +15,7 @@ import {
   type Profile,
 } from "@/lib/storage";
 import type { Prediction } from "@/lib/scoring";
+import { useToast } from "@/components/ui/toast";
 
 export interface AuthUser {
   id: string;
@@ -60,6 +61,7 @@ async function loadPredictions(): Promise<Prediction[]> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<Status>("loading");
+  const toast = useToast();
 
   const activate = useCallback(async (u: AuthUser) => {
     const preds = await loadPredictions();
@@ -97,13 +99,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         const json = await res.json();
         if (!res.ok) return { ok: false, error: json.error ?? "Đăng nhập thất bại" };
-        await activate(json.user as AuthUser);
+        const u = json.user as AuthUser;
+        await activate(u);
+        toast({
+          title: "Đăng nhập thành công",
+          description: `Chào mừng trở lại, ${u.name}!`,
+          variant: "success",
+        });
         return { ok: true };
       } catch {
         return { ok: false, error: "Lỗi kết nối" };
       }
     },
-    [activate],
+    [activate, toast],
   );
 
   const register = useCallback(
@@ -123,12 +131,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const json = await res.json();
         if (!res.ok) return { ok: false, error: json.error ?? "Đăng ký thất bại" };
         await activate(json.user as AuthUser);
+        toast({
+          title: "Tạo tài khoản thành công 🎉",
+          description: "Hồ sơ, dự đoán & điểm của bạn đã được lưu.",
+          variant: "success",
+        });
         return { ok: true };
       } catch {
         return { ok: false, error: "Lỗi kết nối" };
       }
     },
-    [activate],
+    [activate, toast],
   );
 
   const logout = useCallback(async () => {
@@ -138,7 +151,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     exitServerMode();
     setUser(null);
     setStatus("anon");
-  }, []);
+    toast({ title: "Đã đăng xuất", description: "Hẹn gặp lại bạn!" });
+  }, [toast]);
 
   return (
     <Ctx.Provider value={{ user, status, login, register, logout }}>

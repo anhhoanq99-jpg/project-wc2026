@@ -1,7 +1,7 @@
 "use client";
 
 import type { Prediction } from "@/lib/scoring";
-import type { MarketId } from "@/lib/data/bets";
+import type { MarketId } from "@/lib/data/markets";
 
 /**
  * Lưu trữ dữ liệu người dùng với 2 chế độ:

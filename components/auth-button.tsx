@@ -26,7 +26,7 @@ export function AuthButton() {
           type="button"
           onClick={logout}
           aria-label="Đăng xuất"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted hover:bg-surface hover:text-foreground"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <LogOut className="h-4 w-4" />
         </button>
@@ -41,7 +41,7 @@ export function AuthButton() {
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.96 }}
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-[#04130b] hover:brightness-110"
+        className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <LogIn className="h-4 w-4" />
         Đăng nhập

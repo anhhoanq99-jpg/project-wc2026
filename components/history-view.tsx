@@ -15,7 +15,7 @@ import {
 import { usePredictions } from "@/components/use-store";
 import { useMatches } from "@/components/use-matches";
 import { computeAnalytics, type HistoryItem } from "@/lib/analytics";
-import { MARKET_MAP, selectionLabel } from "@/lib/data/bets";
+import { MARKET_MAP, selectionLabel } from "@/lib/data/markets";
 import { getTeam } from "@/lib/data/teams";
 import { fmtWC, fmtDelta, fmtDeltaShort } from "@/lib/format";
 import { Flag } from "@/components/flag";
@@ -37,7 +37,7 @@ export function HistoryView() {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-surface/40 p-10 text-center">
         <ClipboardList className="mx-auto h-10 w-10 text-muted" />
-        <p className="mt-3 text-lg font-bold">Chưa có lịch sử đặt cược</p>
+        <p className="mt-3 text-lg font-bold">Chưa có lịch sử dự đoán</p>
         <p className="mt-1 text-muted">Hãy dự đoán vài trận để xem thống kê & đánh giá nhé!</p>
       </div>
     );
@@ -131,18 +131,18 @@ export function HistoryView() {
         </section>
       )}
 
-      {/* Theo loại kèo */}
+      {/* Theo loại dự đoán */}
       {a.byMarket.length > 0 && (
         <section>
-          <h3 className="mb-3 text-lg font-extrabold">Hiệu suất theo loại kèo</h3>
+          <h3 className="mb-3 text-lg font-extrabold">Hiệu suất theo loại dự đoán</h3>
           <div className="overflow-hidden rounded-xl border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-2/60 text-xs uppercase text-muted">
                 <tr>
-                  <th className="px-3 py-2 text-left font-semibold">Kèo</th>
+                  <th className="px-3 py-2 text-left font-semibold">Loại dự đoán</th>
                   <th className="px-3 py-2 text-right font-semibold">Đúng</th>
                   <th className="px-3 py-2 text-right font-semibold">Tỉ lệ</th>
-                  <th className="px-3 py-2 text-right font-semibold">Lời/Lỗ</th>
+                  <th className="px-3 py-2 text-right font-semibold">Chênh lệch</th>
                 </tr>
               </thead>
               <tbody>
@@ -162,9 +162,9 @@ export function HistoryView() {
         </section>
       )}
 
-      {/* Lịch sử đặt cược */}
+      {/* Lịch sử dự đoán */}
       <section>
-        <h3 className="mb-3 text-lg font-extrabold">Lịch sử đặt cược ({a.history.length})</h3>
+        <h3 className="mb-3 text-lg font-extrabold">Lịch sử dự đoán ({a.history.length})</h3>
         <div className="mb-3 flex flex-wrap gap-2">
           {([
             ["all", "Tất cả"],
@@ -177,7 +177,7 @@ export function HistoryView() {
               onClick={() => setFilter(id)}
               className={cn(
                 "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
-                filter === id ? "bg-brand text-[#04130b]" : "border border-border text-muted hover:bg-surface",
+                filter === id ? "bg-brand text-brand-foreground" : "border border-border text-muted hover:bg-surface",
               )}
             >
               {label}

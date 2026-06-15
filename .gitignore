@@ -11,3 +11,6 @@ next-env.d.ts
 /data
 *.db
 *.sqlite
+
+# log dev rác
+dev-server.log

@@ -6,7 +6,7 @@ import { HistoryView } from "@/components/history-view";
 
 export const metadata: Metadata = {
   title: "Lịch sử & Thống kê · Cúp Thế Giới 2026",
-  description: "Lịch sử đặt cược, phân tích thông minh, dự đoán giỏi nhất và đánh giá người chơi.",
+  description: "Lịch sử dự đoán, phân tích thông minh, dự đoán giỏi nhất và đánh giá người chơi.",
 };
 
 export default function HistoryPage() {

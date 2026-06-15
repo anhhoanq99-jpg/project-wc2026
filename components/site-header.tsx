@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AuthButton } from "@/components/auth-button";
-import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/#hom-nay", label: "Hôm nay" },
@@ -22,7 +21,10 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link href="/" className="flex items-center gap-2 font-extrabold tracking-tight">
+        <Link
+          href="/"
+          className="flex items-center gap-2 rounded-md font-extrabold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand/15 text-brand">
             <Trophy className="h-5 w-5" />
           </span>
@@ -36,7 +38,7 @@ export function SiteHeader() {
             <Link
               key={n.href}
               href={n.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-muted hover:bg-surface hover:text-foreground transition-colors"
+              className="rounded-md px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             >
               {n.label}
             </Link>
@@ -53,7 +55,8 @@ export function SiteHeader() {
             aria-label="Mở menu"
             whileTap={{ scale: 0.9 }}
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-foreground"
+            aria-expanded={open}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </motion.button>
@@ -81,7 +84,7 @@ export function SiteHeader() {
                   <Link
                     href={n.href}
                     onClick={() => setOpen(false)}
-                    className="block rounded-md px-3 py-3 text-sm font-medium text-muted hover:bg-surface hover:text-foreground"
+                    className="block rounded-md px-3 py-3 text-sm font-medium text-muted hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                   >
                     {n.label}
                   </Link>

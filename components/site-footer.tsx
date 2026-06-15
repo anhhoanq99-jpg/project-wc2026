@@ -7,8 +7,8 @@ export function SiteFooter() {
         <div className="flex flex-col gap-3 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-brand" />
-            Chơi vui bằng <strong className="text-foreground">điểm ảo</strong> — không
-            tiền thật, không cờ bạc, không cá độ.
+            Chơi vui bằng <strong className="text-foreground">điểm thưởng</strong> —
+            hoàn toàn miễn phí, không tiền thật.
           </p>
           <p>© {new Date().getFullYear()} · Trang fan phi thương mại</p>
         </div>

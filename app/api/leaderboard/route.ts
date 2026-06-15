@@ -3,7 +3,7 @@ import { getDb } from "@/lib/server/db";
 import { getSessionUser } from "@/lib/server/auth";
 import { buildMergedMatches } from "@/lib/data/provider";
 import { totalPoints, type Prediction } from "@/lib/scoring";
-import type { MarketId } from "@/lib/data/bets";
+import type { MarketId } from "@/lib/data/markets";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

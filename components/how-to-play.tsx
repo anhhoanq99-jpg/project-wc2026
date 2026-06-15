@@ -1,24 +1,24 @@
-import { ShieldCheck, Wallet, TrendingUp, RotateCcw } from "lucide-react";
-import { MARKETS, STARTING_BALANCE } from "@/lib/data/bets";
+import { ShieldCheck, Fish, TrendingUp, RotateCcw } from "lucide-react";
+import { MARKETS, STARTING_BALANCE } from "@/lib/data/markets";
 import { fmtWC, fmtDeltaShort } from "@/lib/format";
 import { Reveal } from "@/components/reveal";
 
 export function HowToPlay() {
   const steps = [
     {
-      icon: <Wallet className="h-5 w-5" />,
+      icon: <Fish className="h-5 w-5" />,
       title: `Bắt đầu với ${fmtWC(STARTING_BALANCE)}`,
-      desc: "Mỗi người chơi có sẵn một số dư WC để đặt cược các trận.",
+      desc: "Mỗi người chơi có sẵn một số điểm thưởng để dự đoán các trận.",
     },
     {
       icon: <TrendingUp className="h-5 w-5" />,
       title: "Đúng → cộng, Sai → trừ",
-      desc: "Kèo càng khó thưởng càng cao. Đặt bừa sẽ lỗ — chọn kèo chắc ăn để leo hạng.",
+      desc: "Dự đoán càng khó thưởng càng cao. Đoán bừa sẽ mất điểm — chọn chắc chắn để leo hạng.",
     },
     {
       icon: <RotateCcw className="h-5 w-5" />,
-      title: "Hết WC được hồi lại",
-      desc: `Cháy ví sẽ được hồi về ${fmtWC(STARTING_BALANCE)} để chơi tiếp, nhưng phần hồi bị TRỪ vào tổng điểm (tổng điểm có thể âm).`,
+      title: "Hết điểm được hồi lại",
+      desc: `Hết điểm sẽ được hồi về ${fmtWC(STARTING_BALANCE)} để chơi tiếp, nhưng phần hồi bị TRỪ vào tổng điểm (tổng điểm có thể âm).`,
     },
   ];
 
@@ -29,7 +29,7 @@ export function HowToPlay() {
           <h2 className="text-2xl font-extrabold sm:text-3xl">Cách chơi dự đoán</h2>
           <p className="mx-auto mt-2 inline-flex max-w-xl items-center gap-2 text-muted">
             <ShieldCheck className="h-4 w-4 shrink-0 text-brand" />
-            Kịch tính như cá độ — nhưng chơi bằng điểm ảo, không một đồng tiền thật.
+            Hồi hộp &amp; vui — chơi hoàn toàn bằng điểm thưởng, không một đồng tiền thật.
           </p>
         </div>
       </Reveal>
@@ -51,13 +51,13 @@ export function HowToPlay() {
       <Reveal delay={0.1}>
         <div className="mt-6 rounded-xl border border-border bg-surface/40 p-5">
           <p className="mb-3 text-sm font-bold uppercase tracking-wide text-muted">
-            Mức thưởng / phạt từng kèo
+            Mức thưởng / phạt mỗi dự đoán
           </p>
           <div className="overflow-hidden rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-2/60 text-xs uppercase text-muted">
                 <tr>
-                  <th className="px-3 py-2 text-left font-semibold">Kèo</th>
+                  <th className="px-3 py-2 text-left font-semibold">Loại dự đoán</th>
                   <th className="px-3 py-2 text-right font-semibold">Đúng</th>
                   <th className="px-3 py-2 text-right font-semibold">Sai</th>
                 </tr>
@@ -70,7 +70,7 @@ export function HowToPlay() {
                       {fmtDeltaShort(mk.points)}
                     </td>
                     <td className="px-3 py-2 text-right font-bold text-danger">
-                      {fmtDeltaShort(-mk.stake)}
+                      {fmtDeltaShort(-mk.penalty)}
                     </td>
                   </tr>
                 ))}

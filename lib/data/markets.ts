@@ -2,8 +2,8 @@ import type { Match } from "@/lib/types";
 import { getTeam } from "@/lib/data/teams";
 
 /**
- * Các "kèo" dự đoán vui — CHƠI BẰNG ĐIỂM ẢO, KHÔNG TIỀN, KHÔNG CỜ BẠC.
- * Điểm thưởng cao/thấp tạo cảm giác kịch tính như cá độ nhưng hoàn toàn 0 đồng.
+ * Các loại DỰ ĐOÁN vui — CHƠI BẰNG ĐIỂM THƯỞNG, HOÀN TOÀN MIỄN PHÍ.
+ * Điểm thưởng cao/thấp tạo cảm giác hồi hộp & vui nhưng tuyệt đối 0 đồng.
  */
 
 export type MarketId = "1x2" | "exact" | "ou25" | "btts" | "totals";
@@ -22,10 +22,10 @@ export interface Market {
   short: string;
   /** Điểm thưởng khi đoán ĐÚNG (càng khó càng cao). */
   points: number;
-  /** Điểm bị TRỪ khi đoán SAI (rủi ro của kèo). */
-  stake: number;
+  /** Điểm bị TRỪ khi đoán SAI (rủi ro của dự đoán). */
+  penalty: number;
   desc: string;
-  /** Lựa chọn cho 1 trận. Rỗng nghĩa là nhập tay (kèo tỉ số chính xác). */
+  /** Lựa chọn cho 1 trận. Rỗng nghĩa là nhập tay (dự đoán tỉ số chính xác). */
   options: (m: Match) => MarketOption[];
   /** Đáp án đúng cho trận đã có tỉ số; null nếu chưa đủ dữ liệu. */
   resultValue: (m: Match) => string | null;
@@ -41,7 +41,7 @@ export const MARKETS: Market[] = [
     name: "Thắng – Hòa – Thua",
     short: "1X2",
     points: 100_000,
-    stake: 80_000,
+    penalty: 80_000,
     desc: "Đoán đội thắng hoặc hòa.",
     options: (m) => [
       { value: "H", label: `${getTeam(m.homeCode).name} thắng` },
@@ -62,21 +62,21 @@ export const MARKETS: Market[] = [
     name: "Tỉ số chính xác",
     short: "Tỉ số",
     points: 600_000,
-    stake: 150_000,
+    penalty: 150_000,
     desc: "Đoán đúng tỉ số cuối trận. Khó nhất, thưởng cao nhất!",
     options: () => [], // nhập tay
     resultValue: (m) => (!hasScore(m) ? null : `${m.homeScore}-${m.awayScore}`),
   },
   {
     id: "ou25",
-    name: "Tài / Xỉu 2.5",
-    short: "Tài/Xỉu",
+    name: "Trên / Dưới 2.5",
+    short: "Trên/Dưới",
     points: 120_000,
-    stake: 120_000,
-    desc: "Tổng số bàn trên (Tài) hay dưới (Xỉu) 2.5.",
+    penalty: 120_000,
+    desc: "Tổng số bàn cả trận trên hay dưới mốc 2.5.",
     options: () => [
-      { value: "O", label: "Tài (≥ 3 bàn)" },
-      { value: "U", label: "Xỉu (≤ 2 bàn)" },
+      { value: "O", label: "Trên (≥ 3 bàn)" },
+      { value: "U", label: "Dưới (≤ 2 bàn)" },
     ],
     resultValue: (m) =>
       !hasScore(m) ? null : m.homeScore + m.awayScore >= 3 ? "O" : "U",
@@ -86,7 +86,7 @@ export const MARKETS: Market[] = [
     name: "Cả hai đội ghi bàn",
     short: "2 đội ghi bàn",
     points: 140_000,
-    stake: 120_000,
+    penalty: 120_000,
     desc: "Liệu cả hai đội đều có bàn thắng?",
     options: () => [
       { value: "Y", label: "Có" },
@@ -100,7 +100,7 @@ export const MARKETS: Market[] = [
     name: "Tổng số bàn thắng",
     short: "Tổng bàn",
     points: 200_000,
-    stake: 100_000,
+    penalty: 100_000,
     desc: "Đoán nhóm tổng số bàn của cả trận.",
     options: () => [
       { value: "0-1", label: "0–1 bàn" },

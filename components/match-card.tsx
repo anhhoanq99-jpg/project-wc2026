@@ -7,15 +7,15 @@ import type { Match, Goal } from "@/lib/types";
 import { getTeam } from "@/lib/data/teams";
 import { channelForMatch } from "@/lib/data/channels";
 import { vnTime } from "@/lib/tz";
-import { MARKET_MAP, selectionLabel } from "@/lib/data/bets";
+import { MARKET_MAP, selectionLabel } from "@/lib/data/markets";
 import { scorePrediction } from "@/lib/scoring";
 import { fmtDelta, fmtDeltaShort } from "@/lib/format";
 import { usePredictions, useProfile } from "@/components/use-store";
-import { BetSheet } from "@/components/bet-sheet";
+import { PredictionSheet } from "@/components/prediction-sheet";
 import { Flag } from "@/components/flag";
 import { cn } from "@/lib/utils";
 
-export function MatchCard({ match, showDay }: { match: Match; showDay?: string }) {
+export function MatchCard({ match }: { match: Match }) {
   const [open, setOpen] = useState(false);
   const preds = usePredictions();
   const profile = useProfile();
@@ -111,7 +111,7 @@ export function MatchCard({ match, showDay }: { match: Match; showDay?: string }
             type="button"
             whileTap={{ scale: 0.96 }}
             onClick={() => setOpen(true)}
-            className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand/15 px-3 py-2 text-sm font-semibold text-brand hover:bg-brand/25 transition-colors"
+            className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand/15 px-3 py-2 text-sm font-semibold text-brand transition-colors hover:bg-brand/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <PencilLine className="h-4 w-4" />
             {myPreds.length > 0 ? "Sửa dự đoán" : "Dự đoán ngay"}
@@ -125,7 +125,7 @@ export function MatchCard({ match, showDay }: { match: Match; showDay?: string }
       </div>
 
       <AnimatePresence>
-        {open && <BetSheet match={match} onClose={() => setOpen(false)} />}
+        {open && <PredictionSheet match={match} onClose={() => setOpen(false)} />}
       </AnimatePresence>
     </motion.div>
   );
@@ -142,7 +142,7 @@ function WatchChip({ match }: { match: Match }) {
       onClick={(e) => e.stopPropagation()}
       title={`Xem ${ch.name} trên VTVGo (bản quyền)`}
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition-colors",
+        "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
         live
           ? "border-live/40 bg-live/15 text-live"
           : "border-border bg-surface hover:border-brand/50 hover:text-brand",

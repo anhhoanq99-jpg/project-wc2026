@@ -6,6 +6,7 @@ import type { Match } from "@/lib/types";
 import { useMatches } from "@/components/use-matches";
 import { vnDayKey, vnRelativeDay, vnTodayKey } from "@/lib/tz";
 import { MatchCard } from "@/components/match-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 /** Lịch thi đấu đầy đủ, nhóm theo ngày (giờ VN), lọc theo trạng thái. */
@@ -36,7 +37,7 @@ export function ScheduleList() {
     return (
       <div className="grid gap-3 sm:grid-cols-2">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-36 animate-pulse rounded-xl bg-surface-2/60" />
+          <Skeleton key={i} className="h-36 rounded-xl" />
         ))}
       </div>
     );
@@ -57,10 +58,12 @@ export function ScheduleList() {
           <button
             key={f.id}
             onClick={() => setFilter(f.id)}
+            aria-pressed={filter === f.id}
             className={cn(
               "shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
               filter === f.id
-                ? "bg-brand text-[#04130b]"
+                ? "bg-brand text-brand-foreground"
                 : "border border-border text-muted hover:bg-surface",
             )}
           >

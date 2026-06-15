@@ -6,7 +6,7 @@ import { ProfileBar } from "@/components/profile-bar";
 
 export const metadata: Metadata = {
   title: "Bảng xếp hạng · Cúp Thế Giới 2026",
-  description: "So tài dự đoán bằng điểm ảo — vui & văn minh, không cờ bạc.",
+  description: "So tài dự đoán bằng điểm thưởng — vui, văn minh & hoàn toàn miễn phí.",
 };
 
 export default function LeaderboardPage() {

@@ -1,8 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
+
+/** true sau khi mount ở client (false khi SSR) — không cần setState trong effect. */
+const subscribe = () => () => {};
+const useIsClient = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
 
 /**
  * Hiện dần khi cuộn tới. Luôn render cùng một phần tử (motion.div) ở cả SSR và
@@ -19,8 +28,7 @@ export function Reveal({
   className?: string;
 }) {
   const reduce = useReducedMotion();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsClient();
 
   const instant = mounted && reduce;
 
