@@ -14,6 +14,8 @@ interface Row {
   total: number;
   correct: number;
   wrong: number;
+  ratingTitle: string;
+  ratingStars: number;
   me: boolean;
 }
 
@@ -111,8 +113,9 @@ export function Leaderboard() {
                   {r.name}
                   {r.me && <span className="ml-2 text-xs text-brand">(bạn)</span>}
                 </span>
-                <span className="text-xs text-muted">
-                  Đúng {r.correct} · Sai {r.wrong}
+                <span className="block truncate text-xs text-muted">
+                  <span className="font-medium text-foreground/80">{r.ratingTitle}</span>
+                  {" · "}Đúng {r.correct} · Sai {r.wrong}
                 </span>
               </span>
               <span

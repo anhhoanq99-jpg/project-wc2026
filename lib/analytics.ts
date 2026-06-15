@@ -41,7 +41,7 @@ export interface Analytics {
   rating: PlayerRating;
 }
 
-function rate(settled: number, winRate: number, net: number): PlayerRating {
+export function rate(settled: number, winRate: number, net: number): PlayerRating {
   if (settled < 5) {
     return {
       title: "🆕 Tân binh",

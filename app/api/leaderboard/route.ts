@@ -3,6 +3,7 @@ import { getDb } from "@/lib/server/db";
 import { getSessionUser } from "@/lib/server/auth";
 import { buildMergedMatches } from "@/lib/data/provider";
 import { totalPoints, type Prediction } from "@/lib/scoring";
+import { rate } from "@/lib/analytics";
 import type { MarketId } from "@/lib/data/markets";
 
 export const runtime = "nodejs";
@@ -36,6 +37,8 @@ export async function GET() {
   const rows = usersRes.rows
     .map((u) => {
       const st = totalPoints(byUser.get(u.id as string) ?? [], matchMap);
+      const winRate = st.settled ? st.correct / st.settled : 0;
+      const r = rate(st.settled, winRate, st.net);
       return {
         id: u.id as string,
         name: u.name as string,
@@ -43,6 +46,8 @@ export async function GET() {
         total: st.total,
         correct: st.correct,
         wrong: st.wrong,
+        ratingTitle: r.title,
+        ratingStars: r.stars,
         me: me?.id === u.id,
       };
     })
