@@ -1,6 +1,7 @@
 import type { Match, MatchStatus, Goal } from "@/lib/types";
 import { getAllMatches } from "@/lib/data/fixtures";
 import { GOAL_OVERRIDES } from "@/lib/data/goal-overrides";
+import { fetchWikiResults, pairKey, type WikiMatch } from "@/lib/data/wikipedia";
 
 /**
  * Phủ KẾT QUẢ/TỈ SỐ THẬT lên lịch tĩnh, lấy từ TheSportsDB (miễn phí, không cần
@@ -118,15 +119,22 @@ function statusFrom(s?: string | null): MatchStatus {
   return "live";
 }
 
-/** Lịch 72 trận + phủ dữ liệu thật từ API. Lỗi mạng -> trả lịch tĩnh. */
+/**
+ * Lịch 72 trận + phủ dữ liệu thật, TỰ CẬP NHẬT từ nhiều nguồn:
+ *  1. TheSportsDB: tỉ số live + trạng thái + giờ chính xác.
+ *  2. Wikipedia (nguồn chính): chốt tỉ số + cầu thủ ghi bàn các trận đã đá.
+ *  3. Dự phòng: tỉ số tĩnh trong fixtures + danh sách ghi bàn nhập tay.
+ * Mọi nguồn lỗi đều bỏ qua êm -> luôn trả về lịch (không bao giờ vỡ).
+ */
 export async function buildMergedMatches(): Promise<Match[]> {
   const base = getAllMatches();
 
+  // --- Nguồn 1: TheSportsDB (live + trạng thái) ---
   let events: SdbEvent[] = [];
   try {
     events = await fetchSeasonEvents();
   } catch {
-    return base; // offline -> lịch tĩnh, trạng thái tính theo giờ
+    events = [];
   }
 
   // Map mỗi trận theo cặp đội (không phân biệt sân nhà/khách).
@@ -166,12 +174,38 @@ export async function buildMergedMatches(): Promise<Match[]> {
     }
   }
 
-  // Ưu tiên danh sách ghi bàn nhập tay (đầy đủ + khớp tỉ số) nếu có.
+  // --- Nguồn 2: Wikipedia (chốt tỉ số + cầu thủ ghi bàn cho trận ĐÃ ĐÁ) ---
+  let wiki: Map<string, WikiMatch> = new Map();
+  try {
+    wiki = await fetchWikiResults();
+  } catch {
+    wiki = new Map();
+  }
   for (const m of base) {
-    if (GOAL_OVERRIDES[m.id]) m.goals = [...GOAL_OVERRIDES[m.id]].sort((a, b) => a.minute - b.minute);
+    if (m.status === "live") continue; // đang đá -> để TheSportsDB lo tỉ số/phút
+    const w = wiki.get(pairKey(m.homeCode, m.awayCode));
+    if (!w) continue;
+    const homeFirst = w.homeCode === m.homeCode;
+    m.homeScore = homeFirst ? w.homeScore : w.awayScore;
+    m.awayScore = homeFirst ? w.awayScore : w.homeScore;
+    m.status = "finished";
+    m.goals = w.goals
+      .map((g) => {
+        const side: Goal["side"] = homeFirst
+          ? g.side
+          : g.side === "home"
+            ? "away"
+            : "home";
+        return { ...g, side };
+      })
+      .sort((a, b) => a.minute - b.minute);
   }
 
-  // Phần còn lại: phủ bàn thắng từ API cho trận đã/đang đá có sự kiện.
+  // --- Nguồn 3 (dự phòng ghi bàn): override nhập tay, rồi timeline TheSportsDB ---
+  for (const m of base) {
+    if (!m.goals && GOAL_OVERRIDES[m.id])
+      m.goals = [...GOAL_OVERRIDES[m.id]].sort((a, b) => a.minute - b.minute);
+  }
   const needGoals = base.filter(
     (m) => !m.goals && m.apiEventId && (m.status === "finished" || m.status === "live"),
   );
