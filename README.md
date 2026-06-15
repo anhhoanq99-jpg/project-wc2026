@@ -18,12 +18,20 @@ npm install
 npm run dev      # http://localhost:3000
 ```
 
-## Biến môi trường (tuỳ chọn, để deploy đồng bộ nhiều máy)
+## Biến môi trường (để deploy đồng bộ nhiều máy)
 
 ```
-DATABASE_URL=libsql://...        # Turso (mặc định: file ./data/wc.db)
-DATABASE_AUTH_TOKEN=...          # token Turso khi deploy
+DATABASE_URL=libsql://....turso.io   # Turso (mặc định local: file ./data/wc.db)
+DATABASE_AUTH_TOKEN=...               # token Turso
 ```
+
+## Deploy lên Vercel + Turso
+
+1. **Tạo DB Turso** (free): `turso db create wc2026` → lấy URL: `turso db show wc2026 --url`,
+   token: `turso db tokens create wc2026`. (Bảng tự tạo ở lần gọi đầu — không cần chạy schema tay.)
+2. **Tạo project trên Vercel**: Add New → Project → chọn repo này (auto nhận diện Next.js).
+3. **Settings → Environment Variables**: thêm `DATABASE_URL` và `DATABASE_AUTH_TOKEN` (giá trị từ bước 1).
+4. **Deploy**. Sau khi xong, mọi người đăng nhập từ máy nào cũng thấy cùng dữ liệu.
 
 ## Cấu trúc
 

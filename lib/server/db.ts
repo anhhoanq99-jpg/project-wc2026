@@ -1,25 +1,37 @@
 import "server-only";
-import { createClient, type Client } from "@libsql/client";
-import { existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import type { Client } from "@libsql/client";
 
 /**
- * Kết nối CSDL (libsql/SQLite). Mặc định file local `./data/wc.db` (chạy ngay).
- * Khi deploy: đặt biến môi trường DATABASE_URL (Turso) + DATABASE_AUTH_TOKEN
- * để DỮ LIỆU NẰM TRÊN ĐÁM MÂY → đồng bộ mọi thiết bị, không mất khi đổi máy.
+ * Kết nối CSDL (libsql/SQLite).
+ *  - Local dev: file `./data/wc.db` (client Node, tự tạo thư mục).
+ *  - Production (Vercel/serverless): đặt DATABASE_URL (Turso, libsql://...) +
+ *    DATABASE_AUTH_TOKEN → dùng client WEB (thuần JS, hợp serverless) → dữ liệu
+ *    nằm trên đám mây, đồng bộ mọi thiết bị.
  */
 
-let client: Client | null = null;
+let clientPromise: Promise<Client> | null = null;
 let ready: Promise<void> | null = null;
 
-function makeClient(): Client {
+async function makeClient(): Promise<Client> {
   const url = process.env.DATABASE_URL ?? "file:./data/wc.db";
+  const authToken = process.env.DATABASE_AUTH_TOKEN;
+
   if (url.startsWith("file:")) {
+    // Local: client Node hỗ trợ file + tạo thư mục nếu chưa có.
+    const [{ createClient }, { existsSync, mkdirSync }, { dirname }] = await Promise.all([
+      import("@libsql/client"),
+      import("node:fs"),
+      import("node:path"),
+    ]);
     const path = url.slice("file:".length);
     const dir = dirname(path);
     if (dir && dir !== "." && !existsSync(dir)) mkdirSync(dir, { recursive: true });
+    return createClient({ url, authToken });
   }
-  return createClient({ url, authToken: process.env.DATABASE_AUTH_TOKEN });
+
+  // Production: client web cho DB từ xa (Turso).
+  const { createClient } = await import("@libsql/client/web");
+  return createClient({ url, authToken }) as unknown as Client;
 }
 
 async function initSchema(c: Client) {
@@ -53,8 +65,9 @@ async function initSchema(c: Client) {
 }
 
 export async function getDb(): Promise<Client> {
-  if (!client) client = makeClient();
-  if (!ready) ready = initSchema(client);
+  if (!clientPromise) clientPromise = makeClient();
+  const c = await clientPromise;
+  if (!ready) ready = initSchema(c);
   await ready;
-  return client;
+  return c;
 }
