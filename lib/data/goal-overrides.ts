@@ -82,4 +82,10 @@ export const GOAL_OVERRIDES: Record<string, Goal[]> = {
     { side: "home", player: "Mattias Svanberg", minute: 84, kind: "goal" },
     { side: "home", player: "Yasin Ayari", minute: 90, kind: "goal" },
   ],
+
+  // Bảng H
+  "H-SAU-URY": [
+    { side: "home", player: "Abdulelah Al-Amri", minute: 41, kind: "goal" },
+    { side: "away", player: "Maxi Araújo", minute: 80, kind: "goal" },
+  ],
 };

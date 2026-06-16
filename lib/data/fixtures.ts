@@ -36,7 +36,7 @@ const RAW: Raw[] = [
   { g: "F", ko: "2026-06-15T02:00:00Z", v: "Monterrey", h: "SWE", a: "TUN", hs: 5, as: 1 },
   { g: "H", ko: "2026-06-15T16:00:00Z", v: "Atlanta", h: "ESP", a: "CPV", hs: 0, as: 0 },
   { g: "G", ko: "2026-06-15T19:00:00Z", v: "Vancouver", h: "BEL", a: "EGY" },
-  { g: "H", ko: "2026-06-15T22:00:00Z", v: "Miami", h: "SAU", a: "URY" },
+  { g: "H", ko: "2026-06-15T22:00:00Z", v: "Miami", h: "SAU", a: "URY", hs: 1, as: 1 },
   { g: "G", ko: "2026-06-16T01:00:00Z", v: "Los Angeles", h: "IRN", a: "NZL" },
   { g: "I", ko: "2026-06-16T19:00:00Z", v: "New York", h: "FRA", a: "SEN" },
   { g: "I", ko: "2026-06-16T22:00:00Z", v: "Boston", h: "IRQ", a: "NOR" },

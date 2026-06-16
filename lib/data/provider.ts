@@ -1,7 +1,12 @@
 import type { Match, MatchStatus, Goal } from "@/lib/types";
 import { getAllMatches } from "@/lib/data/fixtures";
 import { GOAL_OVERRIDES } from "@/lib/data/goal-overrides";
-import { fetchWikiResults, pairKey, type WikiMatch } from "@/lib/data/wikipedia";
+import {
+  fetchWikiResults,
+  fetchWikiKnockout,
+  pairKey,
+  type WikiMatch,
+} from "@/lib/data/wikipedia";
 
 /**
  * Phủ KẾT QUẢ/TỈ SỐ THẬT lên lịch tĩnh, lấy từ TheSportsDB (miễn phí, không cần
@@ -257,16 +262,17 @@ function emptyRounds(): Record<RoundKey, KnockoutTie[]> {
   return { r32: [], r16: [], qf: [], sf: [], third: [], final: [] };
 }
 
-/** Sơ đồ loại trực tiếp lấy từ API, TỰ CẬP NHẬT khi có kết quả. */
+/** Sơ đồ loại trực tiếp, TỰ CẬP NHẬT từ TheSportsDB (live) + Wikipedia (đầy đủ). */
 export async function buildBracket(): Promise<BracketData> {
+  const rounds = emptyRounds();
+
+  // --- Nguồn 1: TheSportsDB (live, nếu có) ---
   let events: SdbEvent[] = [];
   try {
     events = await fetchSeasonEvents();
   } catch {
-    return { rounds: emptyRounds(), champion: null };
+    events = [];
   }
-
-  const rounds = emptyRounds();
   for (const e of events) {
     const rk = roundKeyOf(e);
     if (!rk) continue;
@@ -284,6 +290,27 @@ export async function buildBracket(): Promise<BracketData> {
           : e.strTimestamp.replace(" ", "T") + "Z"
         : null,
     });
+  }
+
+  // --- Nguồn 2: Wikipedia — lấp các vòng TheSportsDB chưa có (nguồn chính, đầy đủ) ---
+  try {
+    const koTies = await fetchWikiKnockout();
+    for (const rk of Object.keys(rounds) as RoundKey[]) {
+      if (rounds[rk].length) continue; // đã có dữ liệu live -> bỏ qua Wikipedia
+      const ties = koTies.filter((t) => t.round === rk);
+      for (const t of ties) {
+        rounds[rk].push({
+          homeCode: t.homeCode,
+          awayCode: t.awayCode,
+          homeScore: t.homeScore,
+          awayScore: t.awayScore,
+          status: "finished",
+          kickoff: null,
+        });
+      }
+    }
+  } catch {
+    // bỏ qua, vẫn trả phần TheSportsDB
   }
 
   // Xác định nhà vô địch nếu chung kết đã xong.
