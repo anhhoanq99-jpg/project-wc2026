@@ -41,6 +41,9 @@ export interface Match {
   /** Bàn thắng (chỉ khi live/finished). */
   homeScore?: number;
   awayScore?: number;
+  /** Tỉ số luân lưu (chỉ trận knock-out hòa sau hiệp phụ). */
+  homePens?: number;
+  awayPens?: number;
   /** Phút hiện tại nếu đang live (hiển thị cho vui). */
   minute?: number;
   /** Danh sách bàn thắng (cầu thủ + phút), lấy từ API cho trận đã/đang đá. */

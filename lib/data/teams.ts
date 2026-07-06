@@ -72,5 +72,13 @@ const TEAM_MAP: Record<string, Team> = Object.fromEntries(
 );
 
 export function getTeam(code: string): Team {
-  return TEAM_MAP[code] ?? { code, name: code, flag: "🏳️", iso2: "" };
+  const t = TEAM_MAP[code];
+  if (t) return t;
+  // Chỗ trống knock-out: "W98" = thắng trận 98, "L101" = thua trận 101.
+  const slot = code.match(/^([WL])(\d+)$/);
+  if (slot) {
+    const label = slot[1] === "W" ? "Thắng trận" : "Thua trận";
+    return { code, name: `${label} ${slot[2]}`, flag: "❔", iso2: "" };
+  }
+  return { code, name: code, flag: "🏳️", iso2: "" };
 }

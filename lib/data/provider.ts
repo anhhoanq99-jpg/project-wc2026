@@ -1,11 +1,14 @@
 import type { Match, MatchStatus, Goal } from "@/lib/types";
-import { getAllMatches } from "@/lib/data/fixtures";
+import { getAllMatches, KO_RAW } from "@/lib/data/fixtures";
 import { GOAL_OVERRIDES } from "@/lib/data/goal-overrides";
 import {
   fetchWikiResults,
-  fetchWikiKnockout,
+  fetchWikiKnockoutResults,
+  fetchWikiBracket,
   pairKey,
   type WikiMatch,
+  type WikiBracketTie,
+  type WikiRound,
 } from "@/lib/data/wikipedia";
 
 /**
@@ -124,8 +127,64 @@ function statusFrom(s?: string | null): MatchStatus {
   return "live";
 }
 
+/** Chỗ trống knock-out ("W98", "L101") — chưa xác định đội. */
+function isSlot(code: string): boolean {
+  return /^[WL]\d+$/.test(code);
+}
+
+const KO_MINUTES = 155; // knock-out có thể tới hiệp phụ + luân lưu
+
+/** Trạng thái theo giờ bóng lăn (chỉ khi đã đủ 2 đội thật). */
+function timeStatus(kickoff: string, now: number): MatchStatus {
+  const ko = new Date(kickoff).getTime();
+  if (now >= ko + KO_MINUTES * 60_000) return "finished";
+  if (now >= ko) return "live";
+  return "upcoming";
+}
+
+const KO_STAGES: WikiRound[] = ["r32", "r16", "qf", "sf", "third", "final"];
+
 /**
- * Lịch 72 trận + phủ dữ liệu thật, TỰ CẬP NHẬT từ nhiều nguồn:
+ * Điền dữ liệu sơ đồ Wikipedia vào các trận knock-out của lịch: thay chỗ trống
+ * "W98"... bằng đội đã xác định, bổ sung tỉ số/luân lưu nếu lịch tĩnh chưa có.
+ * Ghép theo VỊ TRÍ NHÁNH (thứ tự KO_RAW mỗi vòng = thứ tự nhánh Wikipedia).
+ */
+function applyBracketToFixtures(base: Match[], ties: WikiBracketTie[]): void {
+  if (!ties.length) return;
+  const byId = new Map(base.map((m) => [m.id, m]));
+  const now = Date.now();
+
+  for (const stage of KO_STAGES) {
+    const slots = KO_RAW.filter((r) => r.s === stage);
+    const roundTies = ties.filter((t) => t.round === stage);
+    slots.forEach((raw, i) => {
+      const t = roundTies[i];
+      const m = byId.get(`M${raw.n}`);
+      if (!t || !m) return;
+
+      if (t.homeCode) m.homeCode = t.homeCode;
+      if (t.awayCode) m.awayCode = t.awayCode;
+
+      // Đủ 2 đội thật -> tính lại trạng thái theo giờ (lúc tạo lịch còn chỗ trống).
+      if (!isSlot(m.homeCode) && !isSlot(m.awayCode) && m.status === "upcoming") {
+        m.status = timeStatus(m.kickoff, now);
+      }
+
+      if (t.homeScore != null && t.awayScore != null && m.homeScore == null) {
+        m.homeScore = t.homeScore;
+        m.awayScore = t.awayScore;
+        if (t.homePens != null && t.awayPens != null) {
+          m.homePens = t.homePens;
+          m.awayPens = t.awayPens;
+        }
+      }
+    });
+  }
+}
+
+/**
+ * Lịch 104 trận (72 vòng bảng + 32 knock-out) + phủ dữ liệu thật, TỰ CẬP NHẬT:
+ *  0. Sơ đồ Wikipedia: điền đội thắng vào các nhánh knock-out ("W98"...).
  *  1. TheSportsDB: tỉ số live + trạng thái + giờ chính xác.
  *  2. Wikipedia (nguồn chính): chốt tỉ số + cầu thủ ghi bàn các trận đã đá.
  *  3. Dự phòng: tỉ số tĩnh trong fixtures + danh sách ghi bàn nhập tay.
@@ -133,6 +192,13 @@ function statusFrom(s?: string | null): MatchStatus {
  */
 export async function buildMergedMatches(): Promise<Match[]> {
   const base = getAllMatches();
+
+  // --- Nguồn 0: sơ đồ Wikipedia -> chốt đội các nhánh knock-out ---
+  try {
+    applyBracketToFixtures(base, await fetchWikiBracket());
+  } catch {
+    // bỏ qua — chỗ trống hiển thị "Thắng trận N"
+  }
 
   // --- Nguồn 1: TheSportsDB (live + trạng thái) ---
   let events: SdbEvent[] = [];
@@ -142,15 +208,23 @@ export async function buildMergedMatches(): Promise<Match[]> {
     events = [];
   }
 
-  // Map mỗi trận theo cặp đội (không phân biệt sân nhà/khách).
-  const index = new Map<string, Match>();
-  for (const m of base) index.set([m.homeCode, m.awayCode].sort().join("-"), m);
+  // Map mỗi trận theo cặp đội (không phân biệt sân nhà/khách). Tách vòng bảng và
+  // knock-out vì 2 đội cùng bảng có thể gặp lại nhau ở knock-out.
+  const groupIndex = new Map<string, Match>();
+  const koIndex = new Map<string, Match>();
+  for (const m of base) {
+    (m.stage === "group" ? groupIndex : koIndex).set(
+      [m.homeCode, m.awayCode].sort().join("-"),
+      m,
+    );
+  }
 
   for (const e of events) {
     const hc = codeOf(e.strHomeTeam);
     const ac = codeOf(e.strAwayTeam);
     if (!hc || !ac) continue;
-    const fixture = index.get([hc, ac].sort().join("-"));
+    const key = [hc, ac].sort().join("-");
+    const fixture = roundKeyOf(e) ? koIndex.get(key) : groupIndex.get(key);
     if (!fixture) continue;
 
     if (e.idEvent) fixture.apiEventId = e.idEvent;
@@ -186,13 +260,26 @@ export async function buildMergedMatches(): Promise<Match[]> {
   } catch {
     wiki = new Map();
   }
+  let koWiki: Map<string, WikiMatch> = new Map();
+  try {
+    koWiki = await fetchWikiKnockoutResults();
+  } catch {
+    koWiki = new Map();
+  }
   for (const m of base) {
     if (m.status === "live") continue; // đang đá -> để TheSportsDB lo tỉ số/phút
-    const w = wiki.get(pairKey(m.homeCode, m.awayCode));
+    // Tra đúng nguồn theo vòng (2 đội có thể gặp nhau cả vòng bảng lẫn knock-out).
+    const w = (m.stage === "group" ? wiki : koWiki).get(
+      pairKey(m.homeCode, m.awayCode),
+    );
     if (!w) continue;
     const homeFirst = w.homeCode === m.homeCode;
     m.homeScore = homeFirst ? w.homeScore : w.awayScore;
     m.awayScore = homeFirst ? w.awayScore : w.homeScore;
+    if (w.homePens != null && w.awayPens != null) {
+      m.homePens = homeFirst ? w.homePens : w.awayPens;
+      m.awayPens = homeFirst ? w.awayPens : w.homePens;
+    }
     m.status = "finished";
     m.goals = w.goals
       .map((g) => {
@@ -232,6 +319,8 @@ export interface KnockoutTie {
   awayCode: string | null;
   homeScore: number | null;
   awayScore: number | null;
+  homePens: number | null; // luân lưu (nếu hòa sau hiệp phụ)
+  awayPens: number | null;
   status: MatchStatus;
   kickoff: string | null;
 }
@@ -262,11 +351,69 @@ function emptyRounds(): Record<RoundKey, KnockoutTie[]> {
   return { r32: [], r16: [], qf: [], sf: [], third: [], final: [] };
 }
 
-/** Sơ đồ loại trực tiếp, TỰ CẬP NHẬT từ TheSportsDB (live) + Wikipedia (đầy đủ). */
+/** Đội thắng một nhánh (tính cả luân lưu); null nếu chưa xong/chưa rõ. */
+export function tieWinner(t: KnockoutTie): string | null {
+  if (t.status !== "finished" || t.homeScore == null || t.awayScore == null)
+    return null;
+  if (t.homeScore !== t.awayScore)
+    return t.homeScore > t.awayScore ? t.homeCode : t.awayCode;
+  if (t.homePens != null && t.awayPens != null && t.homePens !== t.awayPens)
+    return t.homePens > t.awayPens ? t.homeCode : t.awayCode;
+  return null;
+}
+
+/**
+ * Sơ đồ loại trực tiếp: khung 32 trận tĩnh (đủ tới chung kết, đúng thứ tự nhánh)
+ * + TỰ CẬP NHẬT đội/tỉ số/luân lưu từ Wikipedia (RoundN) và TheSportsDB (live).
+ */
 export async function buildBracket(): Promise<BracketData> {
   const rounds = emptyRounds();
+  const now = Date.now();
 
-  // --- Nguồn 1: TheSportsDB (live, nếu có) ---
+  // --- Khung tĩnh từ lịch knock-out (thứ tự nhánh chuẩn) ---
+  for (const raw of KO_RAW) {
+    const rk = raw.s as RoundKey;
+    const home = isSlot(raw.h) ? null : raw.h;
+    const away = isSlot(raw.a) ? null : raw.a;
+    rounds[rk].push({
+      homeCode: home,
+      awayCode: away,
+      homeScore: raw.hs ?? null,
+      awayScore: raw.as ?? null,
+      homePens: raw.hp ?? null,
+      awayPens: raw.ap ?? null,
+      status: home && away ? timeStatus(raw.ko, now) : "upcoming",
+      kickoff: raw.ko,
+    });
+  }
+
+  // --- Nguồn 1: sơ đồ Wikipedia (đội + tỉ số + luân lưu, theo vị trí nhánh) ---
+  try {
+    const ties = await fetchWikiBracket();
+    for (const rk of KO_STAGES) {
+      const roundTies = ties.filter((t) => t.round === rk);
+      rounds[rk].forEach((tie, i) => {
+        const t = roundTies[i];
+        if (!t) return;
+        if (t.homeCode) tie.homeCode = t.homeCode;
+        if (t.awayCode) tie.awayCode = t.awayCode;
+        if (tie.homeCode && tie.awayCode && tie.kickoff && tie.status === "upcoming") {
+          tie.status = timeStatus(tie.kickoff, now);
+        }
+        if (t.homeScore != null && t.awayScore != null) {
+          tie.homeScore = t.homeScore;
+          tie.awayScore = t.awayScore;
+          tie.homePens = t.homePens;
+          tie.awayPens = t.awayPens;
+          tie.status = "finished";
+        }
+      });
+    }
+  } catch {
+    // bỏ qua — vẫn còn khung tĩnh + TheSportsDB
+  }
+
+  // --- Nguồn 2: TheSportsDB (tỉ số/trạng thái live) ---
   let events: SdbEvent[] = [];
   try {
     events = await fetchSeasonEvents();
@@ -276,55 +423,34 @@ export async function buildBracket(): Promise<BracketData> {
   for (const e of events) {
     const rk = roundKeyOf(e);
     if (!rk) continue;
+    const hc = codeOf(e.strHomeTeam);
+    const ac = codeOf(e.strAwayTeam);
+    if (!hc || !ac) continue;
+    const key = [hc, ac].sort().join("-");
+    const tie = rounds[rk].find(
+      (t) => t.homeCode && t.awayCode && [t.homeCode, t.awayCode].sort().join("-") === key,
+    );
+    if (!tie) continue;
+
+    const status = statusFrom(e.strStatus);
     const hs = e.intHomeScore != null ? parseInt(e.intHomeScore, 10) : null;
     const as = e.intAwayScore != null ? parseInt(e.intAwayScore, 10) : null;
-    rounds[rk].push({
-      homeCode: codeOf(e.strHomeTeam),
-      awayCode: codeOf(e.strAwayTeam),
-      homeScore: hs != null && !Number.isNaN(hs) ? hs : null,
-      awayScore: as != null && !Number.isNaN(as) ? as : null,
-      status: statusFrom(e.strStatus),
-      kickoff: e.strTimestamp
-        ? e.strTimestamp.endsWith("Z")
-          ? e.strTimestamp
-          : e.strTimestamp.replace(" ", "T") + "Z"
-        : null,
-    });
-  }
-
-  // --- Nguồn 2: Wikipedia — lấp các vòng TheSportsDB chưa có (nguồn chính, đầy đủ) ---
-  try {
-    const koTies = await fetchWikiKnockout();
-    for (const rk of Object.keys(rounds) as RoundKey[]) {
-      if (rounds[rk].length) continue; // đã có dữ liệu live -> bỏ qua Wikipedia
-      const ties = koTies.filter((t) => t.round === rk);
-      for (const t of ties) {
-        rounds[rk].push({
-          homeCode: t.homeCode,
-          awayCode: t.awayCode,
-          homeScore: t.homeScore,
-          awayScore: t.awayScore,
-          status: "finished",
-          kickoff: null,
-        });
-      }
+    if (status === "live" && hs != null && as != null && !Number.isNaN(hs) && !Number.isNaN(as)) {
+      const apiHomeFirst = hc === tie.homeCode;
+      tie.homeScore = apiHomeFirst ? hs : as;
+      tie.awayScore = apiHomeFirst ? as : hs;
+      tie.status = "live";
     }
-  } catch {
-    // bỏ qua, vẫn trả phần TheSportsDB
+    if (e.strTimestamp) {
+      tie.kickoff = e.strTimestamp.endsWith("Z")
+        ? e.strTimestamp
+        : e.strTimestamp.replace(" ", "T") + "Z";
+    }
   }
 
-  // Xác định nhà vô địch nếu chung kết đã xong.
-  let champion: string | null = null;
+  // Nhà vô địch = đội thắng chung kết (tính cả luân lưu).
   const fin = rounds.final[0];
-  if (
-    fin &&
-    fin.status === "finished" &&
-    fin.homeScore != null &&
-    fin.awayScore != null &&
-    fin.homeScore !== fin.awayScore
-  ) {
-    champion = fin.homeScore > fin.awayScore ? fin.homeCode : fin.awayCode;
-  }
+  const champion = fin ? tieWinner(fin) : null;
 
   return { rounds, champion };
 }

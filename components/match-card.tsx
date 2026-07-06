@@ -15,6 +15,16 @@ import { PredictionSheet } from "@/components/prediction-sheet";
 import { Flag } from "@/components/flag";
 import { cn } from "@/lib/utils";
 
+/** Tên vòng đấu hiển thị trên thẻ trận knock-out. */
+const STAGE_LABELS: Record<string, string> = {
+  r32: "Vòng 1/16",
+  r16: "Vòng 1/8",
+  qf: "Tứ kết",
+  sf: "Bán kết",
+  third: "Tranh hạng ba",
+  final: "Chung kết",
+};
+
 export function MatchCard({ match }: { match: Match }) {
   const [open, setOpen] = useState(false);
   const preds = usePredictions();
@@ -26,7 +36,10 @@ export function MatchCard({ match }: { match: Match }) {
   const hasFav = fav === match.homeCode || fav === match.awayCode;
 
   const myPreds = preds.filter((p) => p.matchId === match.id);
-  const canPredict = match.status === "upcoming";
+  // Chưa chốt đủ 2 đội (nhánh knock-out "Thắng trận N") -> chưa cho dự đoán.
+  const teamsKnown =
+    !/^[WL]\d+$/.test(match.homeCode) && !/^[WL]\d+$/.test(match.awayCode);
+  const canPredict = match.status === "upcoming" && teamsKnown;
 
   const earned = myPreds.reduce((s, p) => s + scorePrediction(p, match).delta, 0);
 
@@ -42,9 +55,13 @@ export function MatchCard({ match }: { match: Match }) {
       <div className="flex items-center justify-between gap-2 text-xs text-muted">
         <span className="flex min-w-0 items-center gap-2">
           <StatusBadge match={match} />
-          {match.group && (
+          {match.group ? (
             <span className="shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-medium">
               Bảng {match.group}
+            </span>
+          ) : (
+            <span className="shrink-0 rounded bg-accent/15 px-1.5 py-0.5 font-medium text-accent">
+              {STAGE_LABELS[match.stage] ?? match.stage}
             </span>
           )}
           <span className="hidden items-center gap-1 truncate sm:inline-flex">
@@ -119,7 +136,11 @@ export function MatchCard({ match }: { match: Match }) {
         ) : (
           <p className="mt-2.5 inline-flex items-center gap-1.5 text-xs text-muted">
             <Lock className="h-3.5 w-3.5" />
-            {match.status === "live" ? "Đang đá — đã khoá dự đoán" : "Đã kết thúc"}
+            {match.status === "live"
+              ? "Đang đá — đã khoá dự đoán"
+              : match.status === "finished"
+                ? "Đã kết thúc"
+                : "Chờ xác định 2 đội"}
           </p>
         )}
       </div>
@@ -261,9 +282,16 @@ function ScoreBox({ match }: { match: Match }) {
       )}
     >
       {hasScore ? (
-        <p className="text-xl font-extrabold tabular-nums">
-          {match.homeScore} <span className="text-muted">–</span> {match.awayScore}
-        </p>
+        <>
+          <p className="text-xl font-extrabold tabular-nums">
+            {match.homeScore} <span className="text-muted">–</span> {match.awayScore}
+          </p>
+          {match.homePens != null && match.awayPens != null && (
+            <p className="text-[10px] font-semibold text-muted">
+              Luân lưu {match.homePens}–{match.awayPens}
+            </p>
+          )}
+        </>
       ) : (
         <p className="text-xs font-semibold text-muted">
           {match.status === "live" ? "Đang đá" : "Đang cập nhật"}

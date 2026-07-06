@@ -21,6 +21,17 @@ const EMPTY: BracketData = {
   champion: null,
 };
 
+/** Đội thắng một nhánh (tính cả luân lưu); null nếu chưa xong. */
+function winnerOf(tie?: KnockoutTie): string | null {
+  if (!tie || tie.status !== "finished" || tie.homeScore == null || tie.awayScore == null)
+    return null;
+  if (tie.homeScore !== tie.awayScore)
+    return tie.homeScore > tie.awayScore ? tie.homeCode : tie.awayCode;
+  if (tie.homePens != null && tie.awayPens != null && tie.homePens !== tie.awayPens)
+    return tie.homePens > tie.awayPens ? tie.homeCode : tie.awayCode;
+  return null;
+}
+
 export function Bracket() {
   const [data, setData] = useState<BracketData>(EMPTY);
 
@@ -61,6 +72,16 @@ export function Bracket() {
                   {Array.from({ length: r.count }, (_, i) => (
                     <TieCard key={i} tie={ties[i]} highlight={r.key === "final"} />
                   ))}
+
+                  {/* Trận tranh hạng ba nằm dưới chung kết */}
+                  {r.key === "final" && (
+                    <div className="mt-4">
+                      <div className="mb-1 text-center text-[11px] font-semibold uppercase tracking-wide text-muted">
+                        Tranh hạng ba
+                      </div>
+                      <TieCard tie={(data.rounds.third ?? [])[0]} />
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -94,6 +115,16 @@ export function Bracket() {
   );
 }
 
+/** "10/7" — ngày đá (giờ VN) cho nhánh chưa đá. */
+function shortDate(iso: string): string {
+  const d = new Date(iso);
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "numeric",
+    month: "numeric",
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(d);
+}
+
 function TieCard({ tie, highlight }: { tie?: KnockoutTie; highlight?: boolean }) {
   return (
     <div
@@ -105,6 +136,15 @@ function TieCard({ tie, highlight }: { tie?: KnockoutTie; highlight?: boolean })
       <TieSide tie={tie} side="home" />
       <div className="my-1 h-px bg-border" />
       <TieSide tie={tie} side="away" />
+      {tie && tie.status !== "finished" && tie.kickoff && (
+        <div className="mt-1 flex items-center justify-center gap-1 text-[10px] text-muted">
+          {tie.status === "live" ? (
+            <span className="font-bold text-live">● LIVE</span>
+          ) : (
+            <span>{shortDate(tie.kickoff)}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -112,9 +152,8 @@ function TieCard({ tie, highlight }: { tie?: KnockoutTie; highlight?: boolean })
 function TieSide({ tie, side }: { tie?: KnockoutTie; side: "home" | "away" }) {
   const code = tie ? (side === "home" ? tie.homeCode : tie.awayCode) : null;
   const score = tie ? (side === "home" ? tie.homeScore : tie.awayScore) : null;
-  const other = tie ? (side === "home" ? tie.awayScore : tie.homeScore) : null;
-  const win =
-    tie?.status === "finished" && score != null && other != null && score > other;
+  const pens = tie ? (side === "home" ? tie.homePens : tie.awayPens) : null;
+  const win = winnerOf(tie) != null && winnerOf(tie) === code;
 
   if (!code) {
     return (
@@ -134,7 +173,12 @@ function TieSide({ tie, side }: { tie?: KnockoutTie; side: "home" | "away" }) {
     >
       <Flag code={code} size={18} />
       <span className="flex-1 truncate">{getTeam(code).name}</span>
-      {score != null && <span className="tabular-nums">{score}</span>}
+      {score != null && (
+        <span className="tabular-nums">
+          {score}
+          {pens != null && <span className="text-[10px]"> ({pens})</span>}
+        </span>
+      )}
     </div>
   );
 }

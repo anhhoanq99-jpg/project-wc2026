@@ -97,15 +97,80 @@ const RAW: Raw[] = [
   { g: "J", ko: "2026-06-28T02:00:00Z", v: "Dallas", h: "JOR", a: "ARG" },
 ];
 
+/* ------------------------- VÒNG LOẠI TRỰC TIẾP ------------------------- */
+
+export interface KnockoutRaw {
+  n: number; // số trận FIFA (73–104) — dùng làm id ổn định
+  s: Exclude<Stage, "group">;
+  ko: string; // giờ bóng lăn (UTC ISO)
+  v: string; // sân (thành phố)
+  h: string; // mã đội nhà, hoặc chỗ trống "W93"/"L101"
+  a: string;
+  hs?: number;
+  as?: number;
+  hp?: number; // luân lưu (nếu có)
+  ap?: number;
+}
+
+/**
+ * 32 trận knock-out (kết quả thật tính tới 6/7/2026; các trận sau tự cập nhật
+ * từ Wikipedia/TheSportsDB, chỗ trống "W98"... tự thay bằng đội thắng).
+ * THỨ TỰ mỗi vòng PHẢI khớp thứ tự nhánh trên sơ đồ Wikipedia (RoundN)
+ * vì provider ghép dữ liệu theo vị trí nhánh.
+ */
+export const KO_RAW: KnockoutRaw[] = [
+  // Vòng 1/16 (Round of 32) — 16 trận, thứ tự theo nhánh
+  { n: 73, s: "r32", ko: "2026-06-29T20:30:00Z", v: "Boston", h: "GER", a: "PAR", hs: 1, as: 1, hp: 3, ap: 4 },
+  { n: 74, s: "r32", ko: "2026-06-30T21:00:00Z", v: "New York", h: "FRA", a: "SWE", hs: 3, as: 0 },
+  { n: 75, s: "r32", ko: "2026-06-28T19:00:00Z", v: "Los Angeles", h: "RSA", a: "CAN", hs: 0, as: 1 },
+  { n: 76, s: "r32", ko: "2026-06-30T01:00:00Z", v: "Monterrey", h: "NED", a: "MAR", hs: 1, as: 1, hp: 2, ap: 3 },
+  { n: 77, s: "r32", ko: "2026-07-02T23:00:00Z", v: "Toronto", h: "POR", a: "CRO", hs: 2, as: 1 },
+  { n: 78, s: "r32", ko: "2026-07-02T19:00:00Z", v: "Los Angeles", h: "ESP", a: "AUT", hs: 3, as: 0 },
+  { n: 79, s: "r32", ko: "2026-07-02T00:00:00Z", v: "San Francisco", h: "USA", a: "BIH", hs: 2, as: 0 },
+  { n: 80, s: "r32", ko: "2026-07-01T20:00:00Z", v: "Seattle", h: "BEL", a: "SEN", hs: 3, as: 2 },
+  { n: 81, s: "r32", ko: "2026-06-29T17:00:00Z", v: "Houston", h: "BRA", a: "JPN", hs: 2, as: 1 },
+  { n: 82, s: "r32", ko: "2026-06-30T17:00:00Z", v: "Dallas", h: "CIV", a: "NOR", hs: 1, as: 2 },
+  { n: 83, s: "r32", ko: "2026-07-01T02:00:00Z", v: "Mexico City", h: "MEX", a: "ECU", hs: 2, as: 0 },
+  { n: 84, s: "r32", ko: "2026-07-01T16:00:00Z", v: "Atlanta", h: "ENG", a: "COD", hs: 2, as: 1 },
+  { n: 85, s: "r32", ko: "2026-07-03T22:00:00Z", v: "Miami", h: "ARG", a: "CPV", hs: 3, as: 2 },
+  { n: 86, s: "r32", ko: "2026-07-03T18:00:00Z", v: "Dallas", h: "AUS", a: "EGY", hs: 1, as: 1, hp: 2, ap: 4 },
+  { n: 87, s: "r32", ko: "2026-07-03T03:00:00Z", v: "Vancouver", h: "SUI", a: "ALG", hs: 2, as: 0 },
+  { n: 88, s: "r32", ko: "2026-07-04T01:30:00Z", v: "Kansas City", h: "COL", a: "GHA", hs: 1, as: 0 },
+  // Vòng 1/8 (Round of 16) — 8 trận
+  { n: 89, s: "r16", ko: "2026-07-04T21:00:00Z", v: "Philadelphia", h: "PAR", a: "FRA", hs: 0, as: 1 },
+  { n: 90, s: "r16", ko: "2026-07-04T17:00:00Z", v: "Houston", h: "CAN", a: "MAR", hs: 0, as: 3 },
+  { n: 93, s: "r16", ko: "2026-07-06T19:00:00Z", v: "Dallas", h: "POR", a: "ESP" },
+  { n: 94, s: "r16", ko: "2026-07-07T00:00:00Z", v: "Seattle", h: "USA", a: "BEL" },
+  { n: 91, s: "r16", ko: "2026-07-05T20:00:00Z", v: "New York", h: "BRA", a: "NOR", hs: 1, as: 2 },
+  { n: 92, s: "r16", ko: "2026-07-06T01:00:00Z", v: "Mexico City", h: "MEX", a: "ENG", hs: 2, as: 3 },
+  { n: 95, s: "r16", ko: "2026-07-07T16:00:00Z", v: "Atlanta", h: "ARG", a: "EGY" },
+  { n: 96, s: "r16", ko: "2026-07-07T20:00:00Z", v: "Vancouver", h: "SUI", a: "COL" },
+  // Tứ kết
+  { n: 97, s: "qf", ko: "2026-07-09T20:00:00Z", v: "Boston", h: "FRA", a: "MAR" },
+  { n: 98, s: "qf", ko: "2026-07-10T19:00:00Z", v: "Los Angeles", h: "W93", a: "W94" },
+  { n: 99, s: "qf", ko: "2026-07-11T21:00:00Z", v: "Miami", h: "NOR", a: "ENG" },
+  { n: 100, s: "qf", ko: "2026-07-12T01:00:00Z", v: "Kansas City", h: "W95", a: "W96" },
+  // Bán kết
+  { n: 101, s: "sf", ko: "2026-07-14T19:00:00Z", v: "Dallas", h: "W97", a: "W98" },
+  { n: 102, s: "sf", ko: "2026-07-15T19:00:00Z", v: "Atlanta", h: "W99", a: "W100" },
+  // Tranh hạng ba & chung kết
+  { n: 103, s: "third", ko: "2026-07-18T21:00:00Z", v: "Miami", h: "L101", a: "L102" },
+  { n: 104, s: "final", ko: "2026-07-19T19:00:00Z", v: "New York", h: "W101", a: "W102" },
+];
+
 const MATCH_MINUTES = 110;
+const KO_MATCH_MINUTES = 155; // knock-out có thể tới hiệp phụ + luân lưu
+
+function statusAt(koIso: string, now: number, minutes: number): MatchStatus {
+  const ko = new Date(koIso).getTime();
+  if (now >= ko + minutes * 60 * 1000) return "finished";
+  if (now >= ko) return "live";
+  return "upcoming";
+}
 
 function resolve(r: Raw, now: number): Match {
   const ko = new Date(r.ko).getTime();
-  const end = ko + MATCH_MINUTES * 60 * 1000;
-
-  let status: MatchStatus = "upcoming";
-  if (now >= end) status = "finished";
-  else if (now >= ko) status = "live";
+  const status = statusAt(r.ko, now, MATCH_MINUTES);
 
   const m: Match = {
     id: `${r.g}-${r.h}-${r.a}`,
@@ -128,12 +193,42 @@ function resolve(r: Raw, now: number): Match {
   return m;
 }
 
-/** Toàn bộ lịch (trạng thái tính theo thời điểm gọi). */
+function resolveKnockout(r: KnockoutRaw, now: number): Match {
+  const ko = new Date(r.ko).getTime();
+  // Trận chưa xác định đủ 2 đội thì không thể "đang đá/đã đá" dù quá giờ.
+  const known = !/^[WL]\d+$/.test(r.h) && !/^[WL]\d+$/.test(r.a);
+  const status = known ? statusAt(r.ko, now, KO_MATCH_MINUTES) : "upcoming";
+
+  const m: Match = {
+    id: `M${r.n}`,
+    stage: r.s,
+    kickoff: r.ko,
+    venue: r.v,
+    homeCode: r.h,
+    awayCode: r.a,
+    status,
+  };
+
+  if (typeof r.hs === "number" && typeof r.as === "number") {
+    m.homeScore = r.hs;
+    m.awayScore = r.as;
+    if (typeof r.hp === "number" && typeof r.ap === "number") {
+      m.homePens = r.hp;
+      m.awayPens = r.ap;
+    }
+    if (status === "live") m.minute = Math.min(90, Math.floor((now - ko) / 60000));
+  }
+
+  return m;
+}
+
+/** Toàn bộ lịch: vòng bảng + knock-out (trạng thái tính theo thời điểm gọi). */
 export function getAllMatches(): Match[] {
   const now = Date.now();
-  return RAW.map((r) => resolve(r, now)).sort((a, b) =>
-    a.kickoff.localeCompare(b.kickoff),
-  );
+  return [
+    ...RAW.map((r) => resolve(r, now)),
+    ...KO_RAW.map((r) => resolveKnockout(r, now)),
+  ].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 }
 
 export function getMatchById(id: string): Match | undefined {

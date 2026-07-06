@@ -30,6 +30,8 @@ export interface WikiMatch {
   awayCode: string; // = team2
   homeScore: number;
   awayScore: number;
+  homePens?: number; // luân lưu (knock-out hòa sau hiệp phụ)
+  awayPens?: number;
   goals: Goal[]; // side "home" = của team1, "away" = của team2
 }
 
@@ -142,21 +144,31 @@ function parseFootballBox(block: string): WikiMatch | null {
     ...(gm ? parseGoalList(gm[2], "away") : []),
   ].sort((a, b) => a.minute - b.minute);
 
-  return {
+  const out: WikiMatch = {
     homeCode: canonCode(t1[1]),
     awayCode: canonCode(t2[1]),
     homeScore: parseInt(sc[1], 10),
     awayScore: parseInt(sc[2], 10),
     goals,
   };
+
+  // Luân lưu (nếu trận hòa sau hiệp phụ).
+  const pen = block.match(/penaltyscore=\s*(\d+)\s*[–-]\s*(\d+)/);
+  if (pen) {
+    out.homePens = parseInt(pen[1], 10);
+    out.awayPens = parseInt(pen[2], 10);
+  }
+
+  return out;
 }
 
 /** Phân tích 1 trang bảng → các trận ĐÃ có tỉ số. */
 function parseGroupPage(wt: string): WikiMatch[] {
   const out: WikiMatch[] = [];
-  const blocks = wt.split(/\{\{#invoke:football box\|main/);
+  // Wikipedia dùng lẫn "football box" và "Football box" giữa các trang.
+  const blocks = wt.split(/\{\{#invoke:[Ff]ootball box\|main/);
   for (let i = 1; i < blocks.length; i++) {
-    const box = parseFootballBox(blocks[i].slice(0, 2500));
+    const box = parseFootballBox(blocks[i].slice(0, 4000));
     if (box) out.push(box);
   }
   return out;
@@ -166,72 +178,152 @@ function parseGroupPage(wt: string): WikiMatch[] {
 
 export type WikiRound = "r32" | "r16" | "qf" | "sf" | "third" | "final";
 
-export interface WikiKnockoutTie {
+/** Một nhánh trên sơ đồ RoundN của Wikipedia (null = chưa xác định). */
+export interface WikiBracketTie {
   round: WikiRound;
-  homeCode: string;
-  awayCode: string;
-  homeScore: number;
-  awayScore: number;
+  homeCode: string | null;
+  awayCode: string | null;
+  homeScore: number | null;
+  awayScore: number | null;
+  homePens: number | null;
+  awayPens: number | null;
 }
 
-/** Tiêu đề mục (==X==) của trang knock-out -> mã vòng. */
-function roundFromHeader(h: string): WikiRound | null {
-  const s = h.trim().toLowerCase();
-  if (/round of 32/.test(s)) return "r32";
-  if (/round of 16/.test(s)) return "r16";
-  if (/quarter/.test(s)) return "qf";
-  if (/semi/.test(s)) return "sf";
-  if (/third/.test(s)) return "third";
-  if (/^final$/.test(s)) return "final";
-  return null;
+/** Chú thích vòng trong template RoundN -> mã vòng. */
+const BRACKET_COMMENT: [RegExp, WikiRound][] = [
+  [/round of 32/i, "r32"],
+  [/round of 16/i, "r16"],
+  [/quarter/i, "qf"],
+  [/semi/i, "sf"],
+  [/third place/i, "third"],
+  [/^final$/i, "final"],
+];
+
+/** Tách 1 dòng dữ liệu RoundN thành các ô, bỏ qua dấu | nằm trong [[..]]/{{..}}. */
+function splitRowCells(line: string): string[] {
+  const cells: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (let i = 0; i < line.length; i++) {
+    const two = line.slice(i, i + 2);
+    if (two === "[[" || two === "{{") {
+      depth++;
+      cur += two;
+      i++;
+    } else if (two === "]]" || two === "}}") {
+      depth = Math.max(0, depth - 1);
+      cur += two;
+      i++;
+    } else if (line[i] === "|" && depth === 0) {
+      cells.push(cur);
+      cur = "";
+    } else {
+      cur += line[i];
+    }
+  }
+  cells.push(cur);
+  return cells;
+}
+
+/** Mã đội trong 1 ô ("{{#invoke:flag|fb|GER}} {{pso}}"); null nếu chưa xác định. */
+function cellTeamCode(cell: string): string | null {
+  // Cờ bị comment ("<!--{{#invoke:flag|fb|}}-->Winner Match 93") -> chưa có đội.
+  const m = cell.replace(/<!--[\s\S]*?-->/g, "").match(/\{\{#invoke:flag\|[^|}]*\|([A-Za-z]{3})/);
+  return m ? canonCode(m[1]) : null;
+}
+
+/** Tỉ số trong 1 ô ("1 (3)" -> 1 bàn, 3 luân lưu). */
+function cellScore(cell: string): { score: number | null; pens: number | null } {
+  const m = cell.match(/(\d+)\s*(?:\((\d+)\))?/);
+  if (!m) return { score: null, pens: null };
+  return { score: parseInt(m[1], 10), pens: m[2] ? parseInt(m[2], 10) : null };
 }
 
 /**
- * Đọc kết quả vòng loại trực tiếp từ trang "2026 FIFA World Cup knockout stage".
- * Mỗi football box được gán vào vòng theo tiêu đề (==Round of 32==…) gần nhất phía
- * trước nó. Trận chưa đá (đội còn là "Runner-up Group A") tự bị bỏ qua.
+ * Đọc SƠ ĐỒ loại trực tiếp từ template {{#invoke:RoundN|N32}} trên trang
+ * "2026 FIFA World Cup knockout stage" — nguồn gọn nhất, có đủ 6 vòng theo
+ * ĐÚNG THỨ TỰ NHÁNH, kèm tỉ số + luân lưu, cập nhật ngay khi trận kết thúc.
  */
-export async function fetchWikiKnockout(): Promise<WikiKnockoutTie[]> {
+export async function fetchWikiBracket(): Promise<WikiBracketTie[]> {
   let wt = "";
   try {
     wt = await fetchPageWikitext("2026_FIFA_World_Cup_knockout_stage");
   } catch {
     return [];
   }
-  if (!wt) return [];
+  const start = wt.indexOf("{{#invoke:RoundN");
+  if (start < 0) return [];
+  const end = wt.indexOf("<section end=\"Bracket\"", start);
+  const block = wt.slice(start, end > start ? end : undefined);
 
-  // Vị trí từng tiêu đề vòng (chỉ lấy mục level 2 "==X==").
-  const headers: { idx: number; round: WikiRound }[] = [];
-  const hre = /^==([^=\n][^=\n]*?)==\s*$/gm;
-  let hm: RegExpExecArray | null;
-  while ((hm = hre.exec(wt))) {
-    const round = roundFromHeader(hm[1]);
-    if (round) headers.push({ idx: hm.index, round });
-  }
-  if (!headers.length) return [];
+  const out: WikiBracketTie[] = [];
+  let round: WikiRound | null = null;
 
-  const out: WikiKnockoutTie[] = [];
-  const bre = /\{\{#invoke:football box\|main/g;
-  let bm: RegExpExecArray | null;
-  while ((bm = bre.exec(wt))) {
-    // Vòng = tiêu đề gần nhất nằm TRƯỚC khối trận này.
-    let round: WikiRound | null = null;
-    for (const h of headers) {
-      if (h.idx < bm.index) round = h.round;
-      else break;
+  for (const rawLine of block.split("\n")) {
+    const line = rawLine.trim();
+
+    // Dòng chú thích vòng: <!--Round of 32-->, <!--Final-->...
+    const cm = line.match(/^<!--([^>]*?)-->$/);
+    if (cm) {
+      const label = cm[1].trim();
+      const hit = BRACKET_COMMENT.find(([re]) => re.test(label));
+      round = hit ? hit[1] : round;
+      continue;
     }
-    if (!round) continue;
-    const box = parseFootballBox(wt.slice(bm.index, bm.index + 2500));
-    if (!box) continue;
+
+    if (!round || !line.startsWith("|")) continue;
+    const cells = splitRowCells(line.slice(1));
+    // Dòng dữ liệu: [ngày – sân, đội 1, tỉ số 1, đội 2, tỉ số 2]
+    if (cells.length < 5) continue;
+    if (/^(RD\d|style|widescore|bold_winner|3rdplace|Consol|team-width|score-width)/i.test(cells[0]))
+      continue;
+
+    const s1 = cellScore(cells[2]);
+    const s2 = cellScore(cells[4]);
     out.push({
       round,
-      homeCode: box.homeCode,
-      awayCode: box.awayCode,
-      homeScore: box.homeScore,
-      awayScore: box.awayScore,
+      homeCode: cellTeamCode(cells[1]),
+      awayCode: cellTeamCode(cells[3]),
+      homeScore: s1.score,
+      awayScore: s2.score,
+      homePens: s1.pens,
+      awayPens: s2.pens,
     });
   }
   return out;
+}
+
+/**
+ * Các trang chứa football box của vòng loại trực tiếp. Wikipedia tách dần từng
+ * vòng ra trang riêng (round of 32, final...) — trang chưa tồn tại tự bị bỏ qua.
+ */
+const KNOCKOUT_PAGES = [
+  "2026_FIFA_World_Cup_knockout_stage",
+  "2026_FIFA_World_Cup_round_of_32",
+  "2026_FIFA_World_Cup_round_of_16",
+  "2026_FIFA_World_Cup_quarterfinals",
+  "2026_FIFA_World_Cup_quarter-finals",
+  "2026_FIFA_World_Cup_semifinals",
+  "2026_FIFA_World_Cup_semi-finals",
+  "2026_FIFA_World_Cup_final",
+];
+
+/**
+ * Kết quả CHI TIẾT (tỉ số + luân lưu + cầu thủ ghi bàn) các trận knock-out ĐÃ ĐÁ,
+ * gom theo cặp đấu — dùng phủ lên lịch tĩnh giống fetchWikiResults của vòng bảng.
+ */
+export async function fetchWikiKnockoutResults(): Promise<Map<string, WikiMatch>> {
+  const pages = await Promise.all(
+    KNOCKOUT_PAGES.map((p) => fetchPageWikitext(p).catch(() => "")),
+  );
+  const map = new Map<string, WikiMatch>();
+  for (const wt of pages) {
+    if (!wt) continue;
+    for (const m of parseGroupPage(wt)) {
+      map.set(pairKey(m.homeCode, m.awayCode), m);
+    }
+  }
+  return map;
 }
 
 /**
