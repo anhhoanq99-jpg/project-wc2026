@@ -23,10 +23,14 @@ export const STARTING_BALANCE = 10_000_000;
 
 /* ----------------------------- mức đặt ----------------------------- */
 export const MIN_STAKE = 100_000;
-export const MAX_STAKE = 2_000_000;
+/**
+ * Không giới hạn mức đặt — đây chỉ là TRẦN KỸ THUẬT (100 nghìn tỉ) để
+ * mức đặt × tỉ lệ không vượt độ chính xác số nguyên của JS.
+ */
+export const MAX_STAKE = 100_000_000_000_000;
 export const DEFAULT_STAKE = 1_000_000;
 /** Các mức đặt nhanh (chip) cho người chơi bấm chọn. */
-export const STAKE_PRESETS = [100_000, 500_000, 1_000_000, 2_000_000];
+export const STAKE_PRESETS = [100_000, 500_000, 1_000_000, 2_000_000, 5_000_000, 10_000_000];
 
 export interface MarketOption {
   value: string;

@@ -22,12 +22,12 @@ import { Modal } from "@/components/ui/modal";
 import { Flag } from "@/components/flag";
 import { cn } from "@/lib/utils";
 
-/** Nhãn gọn cho mức đặt: 100K, 500K, 1 triệu… */
+/** Nhãn gọn cho mức đặt: 100K, 1 triệu, 5 tỉ, 2 nghìn tỉ… */
 function stakeChip(n: number): string {
-  if (n >= 1_000_000) {
-    const m = n / 1_000_000;
-    return `${Number.isInteger(m) ? m : m.toFixed(1)} triệu`;
-  }
+  const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+  if (n >= 1_000_000_000_000) return `${fmt(n / 1_000_000_000_000)} nghìn tỉ`;
+  if (n >= 1_000_000_000) return `${fmt(n / 1_000_000_000)} tỉ`;
+  if (n >= 1_000_000) return `${fmt(n / 1_000_000)} triệu`;
   return `${Math.round(n / 1000)}K`;
 }
 
@@ -114,7 +114,7 @@ export function PredictionSheet({ match, onClose }: { match: Match; onClose: () 
             className="h-9 w-36 rounded-lg border border-input bg-background px-3 text-sm font-semibold focus:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           />
           <span className="text-xs text-muted">
-            WC · {stakeChip(MIN_STAKE)}–{stakeChip(MAX_STAKE)}
+            WC · tối thiểu {stakeChip(MIN_STAKE)} — đặt bao nhiêu tùy thích
           </span>
         </div>
       </div>
