@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/server/db";
 import { getSessionUser } from "@/lib/server/auth";
 import { MIN_STAKE, MAX_STAKE, DEFAULT_STAKE } from "@/lib/data/markets";
+import { availableBalance, type Prediction } from "@/lib/scoring";
+import { buildMergedMatches } from "@/lib/data/provider";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +49,36 @@ export async function PUT(req: Request) {
 
   const stake = cleanStake(body.stake);
   const db = await getDb();
+
+  // KHÔNG cho đặt quá số điểm khả dụng (số dư − tổng đang đặt chưa chốt).
+  // Dự đoán cũ trên cùng trận + cùng loại được hoàn lại trước khi tính.
+  try {
+    const r = await db.execute({
+      sql: "select match_id, market, value, stake, created_at from predictions where user_id=?",
+      args: [u.id],
+    });
+    const others: Prediction[] = r.rows
+      .map((x) => ({
+        matchId: String(x.match_id),
+        market: x.market as Prediction["market"],
+        value: String(x.value),
+        stake: Number(x.stake) || DEFAULT_STAKE,
+        createdAt: Number(x.created_at),
+      }))
+      .filter((p) => !(p.matchId === body.matchId && p.market === body.market));
+    const matchById = new Map((await buildMergedMatches()).map((m) => [m.id, m]));
+    const avail = availableBalance(others, matchById);
+    if (stake > avail) {
+      return NextResponse.json(
+        { error: `Không đủ điểm thưởng: chỉ còn ${Math.max(0, avail)} WC khả dụng` },
+        { status: 400 },
+      );
+    }
+  } catch {
+    // Lỗi tính khả dụng (vd nguồn dữ liệu trận đấu tạm sập) -> vẫn nhận dự đoán,
+    // vì phía giao diện đã chặn và trò chơi chỉ dùng điểm ảo.
+  }
+
   await db.execute({
     sql: `insert into predictions(user_id,match_id,market,value,stake,created_at) values(?,?,?,?,?,?)
           on conflict(user_id,match_id,market) do update set value=excluded.value, stake=excluded.stake`,

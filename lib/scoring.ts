@@ -92,3 +92,21 @@ export function totalPoints(
 
   return { balance, total, net, refills, settled, correct, wrong, pending };
 }
+
+/**
+ * Điểm KHẢ DỤNG để đặt thêm = số dư hiện có − tổng mức đặt của các dự đoán
+ * CHƯA chốt (đang bị "giữ"). Không được đặt quá số điểm này.
+ */
+export function availableBalance(
+  preds: Prediction[],
+  matchById: Map<string, Match>,
+): number {
+  const s = totalPoints(preds, matchById);
+  let locked = 0;
+  for (const p of preds) {
+    const m = matchById.get(p.matchId);
+    if (!m || scorePrediction(p, m).settled) continue;
+    locked += p.stake && p.stake > 0 ? p.stake : DEFAULT_STAKE;
+  }
+  return s.balance - locked;
+}

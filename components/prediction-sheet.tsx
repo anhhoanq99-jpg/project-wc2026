@@ -12,11 +12,12 @@ import {
   MIN_STAKE,
   MAX_STAKE,
 } from "@/lib/data/markets";
-import { payout, type Prediction } from "@/lib/scoring";
+import { payout, availableBalance, type Prediction } from "@/lib/scoring";
 import { getTeam } from "@/lib/data/teams";
 import { fmtNum } from "@/lib/format";
 import { placePrediction, removePrediction } from "@/lib/storage";
 import { usePredictions } from "@/components/use-store";
+import { useMatches } from "@/components/use-matches";
 import { useToast } from "@/components/ui/toast";
 import { Modal } from "@/components/ui/modal";
 import { Flag } from "@/components/flag";
@@ -33,6 +34,7 @@ function stakeChip(n: number): string {
 
 export function PredictionSheet({ match, onClose }: { match: Match; onClose: () => void }) {
   const preds = usePredictions();
+  const matches = useMatches();
   const toast = useToast();
   const home = getTeam(match.homeCode);
   const away = getTeam(match.awayCode);
@@ -46,6 +48,23 @@ export function PredictionSheet({ match, onClose }: { match: Match; onClose: () 
 
   const predOf = (market: MarketId): Prediction | undefined =>
     preds.find((p) => p.matchId === match.id && p.market === market);
+
+  // Điểm khả dụng = số dư − tổng đang đặt chưa chốt. Không cho đặt quá số này.
+  const matchById = new Map((matches ?? []).map((m) => [m.id, m]));
+  const avail = availableBalance(preds, matchById);
+  /** Khả dụng cho 1 loại dự đoán: đặt lại cùng loại thì mức đặt cũ được hoàn. */
+  const availFor = (cur?: Prediction) => avail + (cur?.stake ?? 0);
+  /** Kiểm tra đủ điểm trước khi đặt; báo lỗi nếu thiếu. */
+  const canAfford = (want: number, cur?: Prediction): boolean => {
+    const free = availFor(cur);
+    if (want <= free) return true;
+    toast({
+      title: "Không đủ điểm thưởng",
+      description: `Bạn chỉ còn ${fmtNum(Math.max(0, free))} WC khả dụng — hạ mức đặt xuống nhé.`,
+      variant: "error",
+    });
+    return false;
+  };
 
   return (
     <Modal
@@ -77,9 +96,17 @@ export function PredictionSheet({ match, onClose }: { match: Match; onClose: () 
 
       {/* BỘ CHỌN MỨC ĐẶT */}
       <div className="border-b border-border bg-surface-2/30 px-5 py-4">
-        <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-          <Coins className="h-4 w-4 text-brand" />
-          Mức đặt mỗi dự đoán
+        <p className="mb-2 flex items-center justify-between gap-1.5 text-sm font-semibold">
+          <span className="flex items-center gap-1.5">
+            <Coins className="h-4 w-4 text-brand" />
+            Mức đặt mỗi dự đoán
+          </span>
+          <span className="text-xs font-medium text-muted">
+            Khả dụng:{" "}
+            <span className={cn("font-bold", avail >= MIN_STAKE ? "text-brand" : "text-danger")}>
+              {fmtNum(Math.max(0, avail))} WC
+            </span>
+          </span>
         </p>
         <div className="flex flex-wrap gap-2">
           {STAKE_PRESETS.map((s) => (
@@ -114,7 +141,7 @@ export function PredictionSheet({ match, onClose }: { match: Match; onClose: () 
             className="h-9 w-36 rounded-lg border border-input bg-background px-3 text-sm font-semibold focus:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           />
           <span className="text-xs text-muted">
-            WC · tối thiểu {stakeChip(MIN_STAKE)} — đặt bao nhiêu tùy thích
+            WC · tối thiểu {stakeChip(MIN_STAKE)} — tối đa bằng số điểm đang có
           </span>
         </div>
       </div>
@@ -141,7 +168,12 @@ export function PredictionSheet({ match, onClose }: { match: Match; onClose: () 
               </div>
 
               {mk.id === "exact" ? (
-                <ExactScorePicker match={match} current={cur} stake={betStake} />
+                <ExactScorePicker
+                  match={match}
+                  current={cur}
+                  stake={betStake}
+                  canAfford={canAfford}
+                />
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   {mk.options(match).map((o) => {
@@ -157,6 +189,7 @@ export function PredictionSheet({ match, onClose }: { match: Match; onClose: () 
                             removePrediction(match.id, mk.id);
                             toast({ title: "Đã bỏ dự đoán", description: mk.name });
                           } else {
+                            if (!canAfford(betStake, cur)) return;
                             placePrediction(match.id, mk.id, o.value, betStake);
                             toast({
                               title: "Đã lưu dự đoán 🎯",
@@ -194,7 +227,7 @@ export function PredictionSheet({ match, onClose }: { match: Match; onClose: () 
       </div>
 
       <div className="sticky bottom-0 border-t border-border bg-surface/95 px-5 py-3 text-center text-xs text-muted backdrop-blur">
-        Lựa chọn được lưu tự động. Đặt bao nhiêu tùy bạn — thắng theo tỉ lệ, thua mất mức đặt.
+        Lựa chọn được lưu tự động. Đặt thoải mái trong số điểm đang có — thắng theo tỉ lệ, thua mất mức đặt.
       </div>
     </Modal>
   );
@@ -204,10 +237,12 @@ function ExactScorePicker({
   match,
   current,
   stake,
+  canAfford,
 }: {
   match: Match;
   current?: Prediction;
   stake: number;
+  canAfford: (want: number, cur?: Prediction) => boolean;
 }) {
   const toast = useToast();
   const [h, a] = (current?.value ?? "-").split("-");
@@ -216,6 +251,7 @@ function ExactScorePicker({
 
   const save = (nh: string, na: string) => {
     if (nh !== "" && na !== "") {
+      if (!canAfford(stake, current)) return;
       placePrediction(match.id, "exact", `${nh}-${na}`, stake);
       toast({
         title: "Đã lưu tỉ số dự đoán 🎯",
