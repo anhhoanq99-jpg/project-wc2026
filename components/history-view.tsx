@@ -10,7 +10,7 @@ import {
   Flame,
   ClipboardList,
 } from "lucide-react";
-import { usePredictions } from "@/components/use-store";
+import { usePredictions, useBonus } from "@/components/use-store";
 import { useMatches } from "@/components/use-matches";
 import { computeAnalytics, type HistoryItem } from "@/lib/analytics";
 import { MARKET_MAP, selectionLabel } from "@/lib/data/markets";
@@ -24,13 +24,14 @@ type Filter = "all" | "correct" | "wrong" | "pending";
 
 export function HistoryView() {
   const preds = usePredictions();
+  const bonus = useBonus();
   const matches = useMatches();
   const [filter, setFilter] = useState<Filter>("all");
 
   const a = useMemo(() => {
     const map = new Map((matches ?? []).map((m) => [m.id, m]));
-    return computeAnalytics(preds, map);
-  }, [preds, matches]);
+    return computeAnalytics(preds, map, bonus);
+  }, [preds, matches, bonus]);
 
   if (preds.length === 0) {
     return (

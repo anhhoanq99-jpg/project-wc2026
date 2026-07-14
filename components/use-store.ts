@@ -5,6 +5,7 @@ import {
   subscribe,
   getPredictions,
   getProfile,
+  getBonus,
   type Profile,
 } from "@/lib/storage";
 import type { Prediction } from "@/lib/scoring";
@@ -14,6 +15,10 @@ const SERVER_PROFILE: Profile = { deviceId: "", name: "", avatar: "", favoriteTe
 
 export function usePredictions(): Prediction[] {
   return useSyncExternalStore(subscribe, getPredictions, () => SERVER_PREDS);
+}
+
+export function useBonus(): number {
+  return useSyncExternalStore(subscribe, getBonus, () => 0);
 }
 
 export function useProfile(): Profile {

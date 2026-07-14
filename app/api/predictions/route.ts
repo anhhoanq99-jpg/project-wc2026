@@ -15,14 +15,26 @@ function cleanStake(v: unknown): number {
   return Math.max(MIN_STAKE, Math.min(n, MAX_STAKE));
 }
 
+/** Tổng điểm thưởng quản trị (bonus) của một người dùng. */
+async function getBonusSum(db: Awaited<ReturnType<typeof getDb>>, userId: string) {
+  const r = await db.execute({
+    sql: "select sum(amount) as bonus from bonuses where user_id=?",
+    args: [userId],
+  });
+  return Number(r.rows[0]?.bonus) || 0;
+}
+
 export async function GET() {
   const u = await getSessionUser();
-  if (!u) return NextResponse.json({ predictions: [] });
+  if (!u) return NextResponse.json({ predictions: [], bonus: 0 });
   const db = await getDb();
-  const r = await db.execute({
-    sql: "select match_id, market, value, stake, created_at from predictions where user_id=?",
-    args: [u.id],
-  });
+  const [r, bonus] = await Promise.all([
+    db.execute({
+      sql: "select match_id, market, value, stake, created_at from predictions where user_id=?",
+      args: [u.id],
+    }),
+    getBonusSum(db, u.id),
+  ]);
   return NextResponse.json({
     predictions: r.rows.map((x) => ({
       matchId: x.match_id,
@@ -31,6 +43,7 @@ export async function GET() {
       stake: Number(x.stake) || DEFAULT_STAKE,
       createdAt: Number(x.created_at),
     })),
+    bonus,
   });
 }
 
@@ -67,7 +80,8 @@ export async function PUT(req: Request) {
       }))
       .filter((p) => !(p.matchId === body.matchId && p.market === body.market));
     const matchById = new Map((await buildMergedMatches()).map((m) => [m.id, m]));
-    const avail = availableBalance(others, matchById);
+    const bonus = await getBonusSum(db, u.id);
+    const avail = availableBalance(others, matchById, bonus);
     if (stake > avail) {
       return NextResponse.json(
         { error: `Không đủ điểm thưởng: chỉ còn ${Math.max(0, avail)} WC khả dụng` },

@@ -16,7 +16,7 @@ import { payout, availableBalance, type Prediction } from "@/lib/scoring";
 import { getTeam } from "@/lib/data/teams";
 import { fmtNum } from "@/lib/format";
 import { placePrediction, removePrediction } from "@/lib/storage";
-import { usePredictions } from "@/components/use-store";
+import { usePredictions, useBonus } from "@/components/use-store";
 import { useMatches } from "@/components/use-matches";
 import { useToast } from "@/components/ui/toast";
 import { Modal } from "@/components/ui/modal";
@@ -34,6 +34,7 @@ function stakeChip(n: number): string {
 
 export function PredictionSheet({ match, onClose }: { match: Match; onClose: () => void }) {
   const preds = usePredictions();
+  const bonus = useBonus();
   const matches = useMatches();
   const toast = useToast();
   const home = getTeam(match.homeCode);
@@ -51,7 +52,7 @@ export function PredictionSheet({ match, onClose }: { match: Match; onClose: () 
 
   // Điểm khả dụng = số dư − tổng đang đặt chưa chốt. Không cho đặt quá số này.
   const matchById = new Map((matches ?? []).map((m) => [m.id, m]));
-  const avail = availableBalance(preds, matchById);
+  const avail = availableBalance(preds, matchById, bonus);
   /** Khả dụng cho 1 loại dự đoán: đặt lại cùng loại thì mức đặt cũ được hoàn. */
   const availFor = (cur?: Prediction) => avail + (cur?.stake ?? 0);
   /** Kiểm tra đủ điểm trước khi đặt; báo lỗi nếu thiếu. */

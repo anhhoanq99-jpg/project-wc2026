@@ -76,8 +76,9 @@ export function rate(settled: number, winRate: number, net: number): PlayerRatin
 export function computeAnalytics(
   preds: Prediction[],
   matchById: Map<string, Match>,
+  bonus = 0,
 ): Analytics {
-  const standing = totalPoints(preds, matchById);
+  const standing = totalPoints(preds, matchById, bonus);
 
   const history: HistoryItem[] = [];
   for (const p of preds) {

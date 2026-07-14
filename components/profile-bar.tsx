@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { UserRound, Pencil, Trophy, Target, Heart, Clock, Fish } from "lucide-react";
 import { setName, setFavoriteTeam } from "@/lib/storage";
-import { useProfile, usePredictions } from "@/components/use-store";
+import { useProfile, usePredictions, useBonus } from "@/components/use-store";
 import { useMatches } from "@/components/use-matches";
 import { totalPoints } from "@/lib/scoring";
 import { getTeam } from "@/lib/data/teams";
@@ -21,8 +21,9 @@ export function ProfileBar() {
   const [draft, setDraft] = useState("");
   const [picker, setPicker] = useState(false);
 
+  const bonus = useBonus();
   const map = new Map((matches ?? []).map((m) => [m.id, m]));
-  const stats = totalPoints(preds, map);
+  const stats = totalPoints(preds, map, bonus);
 
   const save = () => {
     if (draft.trim()) setName(draft);

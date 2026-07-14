@@ -47,14 +47,14 @@ function toProfile(u: AuthUser): Profile {
   return { deviceId: u.id, name: u.name, avatar: u.avatar, favoriteTeam: u.favoriteTeam };
 }
 
-async function loadPredictions(): Promise<Prediction[]> {
+async function loadPredictions(): Promise<{ predictions: Prediction[]; bonus: number }> {
   try {
     const res = await fetch("/api/predictions", { cache: "no-store" });
-    if (!res.ok) return [];
-    const json = (await res.json()) as { predictions?: Prediction[] };
-    return json.predictions ?? [];
+    if (!res.ok) return { predictions: [], bonus: 0 };
+    const json = (await res.json()) as { predictions?: Prediction[]; bonus?: number };
+    return { predictions: json.predictions ?? [], bonus: Number(json.bonus) || 0 };
   } catch {
-    return [];
+    return { predictions: [], bonus: 0 };
   }
 }
 
@@ -64,8 +64,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const toast = useToast();
 
   const activate = useCallback(async (u: AuthUser) => {
-    const preds = await loadPredictions();
-    enterServerMode(toProfile(u), preds);
+    const { predictions, bonus } = await loadPredictions();
+    enterServerMode(toProfile(u), predictions, bonus);
     setUser(u);
     setStatus("authed");
   }, []);

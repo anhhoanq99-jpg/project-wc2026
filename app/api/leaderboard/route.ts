@@ -43,14 +43,18 @@ export async function GET() {
 
   const rows = usersRes.rows
     .map((u) => {
-      const st = totalPoints(byUser.get(u.id as string) ?? [], matchMap);
+      const st = totalPoints(
+        byUser.get(u.id as string) ?? [],
+        matchMap,
+        bonusByUser.get(u.id as string) ?? 0,
+      );
       const winRate = st.settled ? st.correct / st.settled : 0;
       const r = rate(st.settled, winRate, st.net);
       return {
         id: u.id as string,
         name: u.name as string,
         avatar: (u.avatar as string) ?? "",
-        total: st.total + (bonusByUser.get(u.id as string) ?? 0),
+        total: st.total,
         correct: st.correct,
         wrong: st.wrong,
         ratingTitle: r.title,

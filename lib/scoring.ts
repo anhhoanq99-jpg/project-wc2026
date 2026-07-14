@@ -56,10 +56,12 @@ export interface Standing {
   pending: number;
 }
 
-/** Tổng kết từ danh sách dự đoán + bản đồ trận đấu (có cơ chế hồi điểm). */
+/** Tổng kết từ danh sách dự đoán + bản đồ trận đấu (có cơ chế hồi điểm).
+ *  `bonus`: điểm thưởng quản trị cộng tay — tính vào tổng điểm & số dư. */
 export function totalPoints(
   preds: Prediction[],
   matchById: Map<string, Match>,
+  bonus = 0,
 ): Standing {
   let net = 0,
     settled = 0,
@@ -80,7 +82,7 @@ export function totalPoints(
     }
   }
 
-  const total = STARTING_BALANCE + net; // điểm xếp hạng (có thể âm)
+  const total = STARTING_BALANCE + net + bonus; // điểm xếp hạng (có thể âm)
 
   // Kho điểm: hết (≤ 0) thì hồi về mức khởi đầu, mỗi lần hồi tính 1 lần bailout.
   let refills = 0;
@@ -100,8 +102,9 @@ export function totalPoints(
 export function availableBalance(
   preds: Prediction[],
   matchById: Map<string, Match>,
+  bonus = 0,
 ): number {
-  const s = totalPoints(preds, matchById);
+  const s = totalPoints(preds, matchById, bonus);
   let locked = 0;
   for (const p of preds) {
     const m = matchById.get(p.matchId);
