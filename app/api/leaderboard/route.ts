@@ -19,6 +19,13 @@ export async function GET() {
   const predsRes = await db.execute(
     "select user_id, match_id, market, value, stake, created_at from predictions",
   );
+  // Điểm thưởng cộng tay (bonus) — cộng thẳng vào tổng điểm xếp hạng.
+  const bonusRes = await db.execute(
+    "select user_id, sum(amount) as bonus from bonuses group by user_id",
+  );
+  const bonusByUser = new Map(
+    bonusRes.rows.map((r) => [r.user_id as string, Number(r.bonus) || 0]),
+  );
 
   const byUser = new Map<string, Prediction[]>();
   for (const r of predsRes.rows) {
@@ -43,7 +50,7 @@ export async function GET() {
         id: u.id as string,
         name: u.name as string,
         avatar: (u.avatar as string) ?? "",
-        total: st.total,
+        total: st.total + (bonusByUser.get(u.id as string) ?? 0),
         correct: st.correct,
         wrong: st.wrong,
         ratingTitle: r.title,

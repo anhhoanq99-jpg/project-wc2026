@@ -14,3 +14,4 @@ next-env.d.ts
 
 # log dev rác
 dev-server.log
+.vercel

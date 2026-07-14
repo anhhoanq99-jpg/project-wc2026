@@ -63,6 +63,13 @@ async function initSchema(c: Client) {
         created_at integer not null,
         primary key (user_id, match_id, market)
       )`,
+      `create table if not exists bonuses (
+        id text primary key,
+        user_id text not null,
+        amount integer not null,
+        reason text not null default '',
+        created_at integer not null
+      )`,
     ],
     "write",
   );
